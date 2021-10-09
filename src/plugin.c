@@ -36,7 +36,6 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
 
-
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog);
@@ -50,6 +49,8 @@ void on_toggle_editor_sidebar();
 void on_toggle_editor_msgwin();
 void on_toggle_editor_sidebar_msgwin();
 bool on_key_binding(int key_id);
+
+static GtkWidget *find_focus_widget(GtkWidget *widget);
 
 /* ********************
  * Globals
@@ -71,33 +72,16 @@ PLUGIN_SET_INFO(
     "Tweaks for Geany.  Multiple column markers.  Extra keybindings.", "0.01.0",
     "xiota")
 
-void plugin_init(G_GNUC_UNUSED GeanyData *data) {
-#define PREVIEW_PSC(sig, cb) \
-  plugin_signal_connect(geany_plugin, NULL, (sig), TRUE, G_CALLBACK(cb), NULL)
-
-  PREVIEW_PSC("geany-startup-complete", on_document_signal);
-  PREVIEW_PSC("document-activate", on_document_signal);
-  PREVIEW_PSC("document-new", on_document_signal);
-  PREVIEW_PSC("document-open", on_document_signal);
-  PREVIEW_PSC("document-reload", on_document_signal);
-#undef CONNECT
+void plugin_init(GeanyData *data) {
+  GEANY_PSC("geany-startup-complete", on_document_signal);
+  GEANY_PSC("document-activate", on_document_signal);
+  GEANY_PSC("document-new", on_document_signal);
+  GEANY_PSC("document-open", on_document_signal);
+  GEANY_PSC("document-reload", on_document_signal);
 
   // Set keyboard shortcuts
   GeanyKeyGroup *group = plugin_set_key_group(
-      geany_plugin, _("Xi/Tweaks"), 4, (GeanyKeyGroupCallback)on_key_binding);
-
-  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_EDITOR_VTE, NULL, 0, 0,
-                       "xitweaks_toggle_editor_vte",
-                       _("Switch focus between editor and VTE."), NULL);
-
-  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR, NULL, 0, 0,
-                       "xitweaks_toggle_editor_sidebar",
-                       _("Switch focus between editor and sidebar."), NULL);
-
-  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_EDITOR_MSGWIN, NULL, 0, 0,
-                       "xitweaks_toggle_editor_msgwin",
-                       _("Switch focus between editor and message window."),
-                       NULL);
+      geany_plugin, _("Xi/Tweaks"), 1, (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
       group, TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
@@ -138,6 +122,10 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
 
   item = gtk_menu_item_new_with_label("Edit Config File");
   g_signal_connect(item, "activate", G_CALLBACK(on_pref_edit_config), NULL);
+  gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+
+  item = gtk_menu_item_new_with_label("Edit Config File");
+  g_signal_connect(item, "activate", G_CALLBACK(on_pref_reload_config), NULL);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   item = gtk_menu_item_new_with_label("Open Config Folder");
@@ -231,8 +219,7 @@ static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
-  char *conf_dn =
-      g_build_filename(geany_data->app->configdir, "plugins", "preview", NULL);
+  char *conf_dn = g_build_filename(geany_data->app->configdir, "plugins", NULL);
 
   char *command;
   command = g_strdup_printf("xdg-open \"%s\"", conf_dn);
@@ -246,7 +233,7 @@ static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
   char *conf_fn = g_build_filename(geany_data->app->configdir, "plugins",
-                                   "preview", "preview.conf", NULL);
+                                   "xitweaks", "xitweaks.conf", NULL);
   GeanyDocument *doc = document_open_file(conf_fn, FALSE, NULL, NULL);
   document_reload_force(doc, NULL);
   GFREE(conf_fn);
@@ -264,53 +251,13 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
  * Shortcut Callbacks
  */
 
-/*
- */
-void on_toggle_editor_vte() {
-  if (!gtk_widget_is_visible(GTK_WIDGET(g_notebook_msgwin))) {
-    keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
-    return;
-  }
-
-  GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_msgwin, MSG_VTE);
-  if (gtk_widget_has_focus(page)) {
-    keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
-  } else {
-    keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_VTE);
-  }
-}
-
-void on_toggle_editor_sidebar() {
-  GeanyDocument *doc = document_get_current();
-  if (doc != NULL) {
-    GtkWidget *sci = GTK_WIDGET(doc->editor->sci);
-    if (gtk_widget_has_focus(sci)) {
-      keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_SIDEBAR);
-    } else {
-      keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
-    }
-  }
-}
-
-void on_toggle_editor_msgwin() {
-  GeanyDocument *doc = document_get_current();
-  if (doc != NULL) {
-    GtkWidget *sci = GTK_WIDGET(doc->editor->sci);
-    if (gtk_widget_has_focus(sci)) {
-      keybindings_send_command(GEANY_KEY_GROUP_FOCUS,
-                               GEANY_KEYS_FOCUS_MESSAGE_WINDOW);
-    } else {
-      keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
-    }
-  }
-}
-
 void on_toggle_editor_sidebar_msgwin() {
   GeanyDocument *doc = document_get_current();
   if (doc != NULL) {
     GtkWidget *sci = GTK_WIDGET(doc->editor->sci);
     gint cur_page = gtk_notebook_get_current_page(g_notebook_sidebar);
     GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_sidebar, cur_page);
+    page = find_focus_widget(page);
 
     if (gtk_widget_has_focus(sci) &&
         gtk_widget_is_visible(GTK_WIDGET(g_notebook_sidebar))) {
@@ -327,15 +274,6 @@ void on_toggle_editor_sidebar_msgwin() {
 
 bool on_key_binding(int key_id) {
   switch (key_id) {
-    case TWEAKS_KEY_TOGGLE_EDITOR_VTE:
-      on_toggle_editor_vte();
-      break;
-    case TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR:
-      on_toggle_editor_sidebar();
-      break;
-    case TWEAKS_KEY_TOGGLE_EDITOR_MSGWIN:
-      on_toggle_editor_msgwin();
-      break;
     case TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN:
       on_toggle_editor_sidebar_msgwin();
       break;
@@ -364,4 +302,32 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
       }
     }
   }
+}
+
+/* ********************
+ * Other functions
+ */
+
+static GtkWidget *find_focus_widget(GtkWidget *widget) {
+  GtkWidget *focus = NULL;
+
+  // optimized simple case
+  if (GTK_IS_BIN(widget)) {
+    focus = find_focus_widget(gtk_bin_get_child(GTK_BIN(widget)));
+  } else if (GTK_IS_CONTAINER(widget)) {
+    GList *children = gtk_container_get_children(GTK_CONTAINER(widget));
+    GList *node;
+
+    for (node = children; node && !focus; node = node->next)
+      focus = find_focus_widget(node->data);
+    g_list_free(children);
+  }
+
+  /* Some containers handled above might not have children and be what we want
+   * to focus (e.g. GtkTreeView), so focus that if possible and we don't have
+   * anything better */
+  if (!focus && gtk_widget_get_can_focus(widget)) {
+    focus = widget;
+  }
+  return focus;
 }

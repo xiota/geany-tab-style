@@ -18,8 +18,8 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef PREVIEW_PREFS_H
-#define PREVIEW_PREFS_H
+#ifndef XITWEAKS_PREFS_H
+#define XITWEAKS_PREFS_H
 
 #include "plugin.h"
 
@@ -102,10 +102,16 @@ G_END_DECLS
     }                                  \
   } while (0)
 
+#define GKEY_FILE_FREE(_z_) \
+  do {                      \
+    g_key_file_free(_z_);   \
+    _z_ = NULL;             \
+  } while (0)
+
 #define ADD_COLUMN_MARKER(idx, col, bgr)           \
   do {                                             \
     settings.column_marker_columns[(idx)] = (col); \
     settings.column_marker_colors[(idx)] = (bgr);  \
   } while (0)
 
-#endif  // PREVIEW_PREFS_H
+#endif  // XITWEAKS_PREFS_H

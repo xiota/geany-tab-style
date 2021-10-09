@@ -18,8 +18,8 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef PREVIEW_PLUGIN_H
-#define PREVIEW_PLUGIN_H
+#ifndef XITWEAKS_PLUGIN_H
+#define XITWEAKS_PLUGIN_H
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -27,10 +27,9 @@
 //#include <Scintilla.h>
 //#include <ScintillaWidget.h>
 
-#include <geanyplugin.h>
-
 #include <ctype.h>
 #include <errno.h>
+#include <geanyplugin.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -44,11 +43,11 @@ extern GeanyData *geany_data;
 extern struct TweakSettings settings;
 
 enum TweakShortcuts {
-  TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR,
-  TWEAKS_KEY_TOGGLE_EDITOR_MSGWIN,
   TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN,
-  TWEAKS_KEY_TOGGLE_EDITOR_VTE,
 };
+
+#define GEANY_PSC(sig, cb) \
+  plugin_signal_connect(geany_plugin, NULL, (sig), TRUE, G_CALLBACK(cb), NULL)
 
 #define GFREE(_z_) \
   do {             \
@@ -68,15 +67,9 @@ enum TweakShortcuts {
     _z_ = NULL;          \
   } while (0)
 
-#define GKEY_FILE_FREE(_z_) \
-  do {                      \
-    g_key_file_free(_z_);   \
-    _z_ = NULL;             \
-  } while (0)
-
 #define REGEX_CHK(_tp, _str) \
   g_regex_match_simple((_tp), (_str), G_REGEX_CASELESS, 0)
 
 G_END_DECLS
 
-#endif  // PREVIEW_PLUGIN_H
+#endif  // XITWEAKS_PLUGIN_H
