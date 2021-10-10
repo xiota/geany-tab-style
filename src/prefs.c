@@ -90,6 +90,11 @@ void save_settings() {
   SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
   SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
+  SET_KEY(boolean, "hpaned_position_enabled", settings.hpaned_position_enabled);
+  SET_KEY(integer, "hpaned_position_normal", settings.hpaned_position_normal);
+  SET_KEY(integer, "hpaned_position_maximized",
+          settings.hpaned_position_maximized);
+
   SET_KEY(boolean, "column_marker_enable", settings.column_marker_enable);
 
   g_key_file_set_integer_list(kf, PLUGIN_GROUP, "column_marker_columns",
@@ -118,7 +123,11 @@ void load_settings(GKeyFile *kf) {
 
   LOAD_KEY_BOOLEAN(sidebar_focus_enabled, FALSE);
   LOAD_KEY_BOOLEAN(sidebar_focus_bold, FALSE);
-  LOAD_KEY_STRING(sidebar_focus_color, "initial");
+  LOAD_KEY_STRING(sidebar_focus_color, "green");
+
+  LOAD_KEY_BOOLEAN(hpaned_position_enabled, TRUE);
+  LOAD_KEY_INTEGER(hpaned_position_normal, 0, 0);
+  LOAD_KEY_INTEGER(hpaned_position_maximized, 0, 0);
 
   LOAD_KEY_BOOLEAN(column_marker_enable, TRUE);
 
@@ -156,7 +165,11 @@ void load_settings(GKeyFile *kf) {
 void init_settings() {
   settings.sidebar_focus_enabled = FALSE;
   settings.sidebar_focus_bold = FALSE;
-  settings.sidebar_focus_color = g_strdup("initial");
+  settings.sidebar_focus_color = g_strdup("green");
+
+  settings.hpaned_position_enabled = TRUE;
+  settings.hpaned_position_normal = 0;
+  settings.hpaned_position_maximized = 0;
 
   settings.column_marker_count = 13;
   settings.column_marker_columns = g_malloc(13 * sizeof(int));

@@ -5,10 +5,11 @@ This plugin provides some minor tweaks for Geany that don't fit anywhere else.
 ## Features
 
 * Multiple column markers
+* Highlight sidebar tab on focus
 
 ## Installation
 
-The Xi/Tweaks plugin can be installed on Ubuntu 21.04 and 21.10 via PPA.
+The Xi/Tweaks plugin can be installed on Ubuntu via PPA.
 ```
 sudo add-apt-repository ppa:xiota/geany-plugins
 sudo apt-get update

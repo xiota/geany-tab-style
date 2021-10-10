@@ -30,6 +30,10 @@ struct TweakSettings {
   gboolean sidebar_focus_bold;
   gchar *sidebar_focus_color;
 
+  gboolean hpaned_position_enabled;
+  int hpaned_position_normal;
+  int hpaned_position_maximized;
+
   gboolean column_marker_enable;
   int column_marker_count;
   int *column_marker_columns;
