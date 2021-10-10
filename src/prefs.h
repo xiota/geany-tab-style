@@ -31,6 +31,7 @@ struct TweakSettings {
   gchar *sidebar_focus_color;
 
   gboolean hpaned_position_enabled;
+  gboolean hpaned_position_update;
   int hpaned_position_normal;
   int hpaned_position_maximized;
 

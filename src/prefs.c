@@ -91,6 +91,7 @@ void save_settings() {
   SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
   SET_KEY(boolean, "hpaned_position_enabled", settings.hpaned_position_enabled);
+  SET_KEY(boolean, "hpaned_position_update", settings.hpaned_position_update);
   SET_KEY(integer, "hpaned_position_normal", settings.hpaned_position_normal);
   SET_KEY(integer, "hpaned_position_maximized",
           settings.hpaned_position_maximized);
@@ -126,6 +127,7 @@ void load_settings(GKeyFile *kf) {
   LOAD_KEY_STRING(sidebar_focus_color, "green");
 
   LOAD_KEY_BOOLEAN(hpaned_position_enabled, TRUE);
+  LOAD_KEY_BOOLEAN(hpaned_position_update, TRUE);
   LOAD_KEY_INTEGER(hpaned_position_normal, 0, 0);
   LOAD_KEY_INTEGER(hpaned_position_maximized, 0, 0);
 
@@ -168,6 +170,7 @@ void init_settings() {
   settings.sidebar_focus_color = g_strdup("green");
 
   settings.hpaned_position_enabled = TRUE;
+  settings.hpaned_position_update = TRUE;
   settings.hpaned_position_normal = 0;
   settings.hpaned_position_maximized = 0;
 
