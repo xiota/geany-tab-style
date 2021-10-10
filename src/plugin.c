@@ -1,4 +1,4 @@
-/*
+  /*
  * Tweaks Plugin for Geany
  * Copyright 2021 xiota
  *
@@ -26,31 +26,42 @@
 #include "prefs.h"
 
 /* ********************
- * Declarations
+ * Function Declarations
  */
+// Plugin Setup
 static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data);
 static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data);
 static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
                                    gpointer pdata);
 
-static void on_document_signal(GObject *obj, GeanyDocument *doc,
+// Sidebar Tab Focus Callbacks
+static void sidebar_focus_update();
+static void on_grab_notify(GtkWidget *self, gboolean was_grabbed,
+                           gpointer user_data);
+static void on_grab_focus(GtkWidget *self, gpointer user_data);
+static void on_set_focus_child(GtkContainer *self, GtkWidget *object,
                                gpointer user_data);
+static void sidebar_focus_highlight();
 
+// Preferences Callbacks
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog);
-
 static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog);
 
+// Keybinding Functions and Callbacks
 void on_toggle_editor_vte();
 void on_toggle_editor_sidebar();
 void on_toggle_editor_msgwin();
 void on_toggle_editor_sidebar_msgwin();
 bool on_key_binding(int key_id);
-
 static GtkWidget *find_focus_widget(GtkWidget *widget);
+
+// Geany Signal Callbacks
+static void on_document_signal(GObject *obj, GeanyDocument *doc,
+                               gpointer user_data);
 
 /* ********************
  * Globals
@@ -61,6 +72,13 @@ GeanyData *geany_data;
 static GeanyDocument *g_current_doc = NULL;
 GtkNotebook *g_notebook_sidebar = NULL;
 GtkNotebook *g_notebook_msgwin = NULL;
+
+gulong g_handle_set_focus_child = 0;
+gulong g_handle_grab_focus = 0;
+gulong g_handle_grab_notify = 0;
+
+gulong g_handle_tab_object = 0;
+GtkWidget *g_tab_object = NULL;
 
 /* ********************
  * Plugin Setup
@@ -124,7 +142,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   g_signal_connect(item, "activate", G_CALLBACK(on_pref_edit_config), NULL);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
-  item = gtk_menu_item_new_with_label("Edit Config File");
+  item = gtk_menu_item_new_with_label("Reload Config File");
   g_signal_connect(item, "activate", G_CALLBACK(on_pref_reload_config), NULL);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
@@ -144,6 +162,10 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
 
   gtk_menu_shell_append(GTK_MENU_SHELL(geany_data->main_widgets->tools_menu),
                         tweaks_menu);
+
+  gtk_widget_set_events(geany->main_widgets->window, GDK_ALL_EVENTS_MASK);
+
+  sidebar_focus_update();
 
   return TRUE;
 }
@@ -208,6 +230,7 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
 
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
+  sidebar_focus_update();
 }
 
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog) {
@@ -248,7 +271,104 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
 }
 
 /* ********************
- * Shortcut Callbacks
+ * Sidebar Tab Focus Callbacks
+ */
+
+static void sidebar_focus_update() {
+  if (settings.sidebar_focus_enabled && !g_handle_set_focus_child) {
+    g_handle_set_focus_child =
+        g_signal_connect(GTK_WIDGET(g_notebook_sidebar), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child), NULL);
+
+    g_handle_grab_focus =
+        g_signal_connect(GTK_WIDGET(g_notebook_sidebar), "grab-focus",
+                         G_CALLBACK(on_grab_focus), NULL);
+
+    g_handle_grab_notify =
+        g_signal_connect(GTK_WIDGET(g_notebook_sidebar), "grab-notify",
+                         G_CALLBACK(on_grab_notify), NULL);
+  }
+
+  if (!settings.sidebar_focus_enabled && g_handle_set_focus_child) {
+    g_clear_signal_handler(&g_handle_set_focus_child,
+                           GTK_WIDGET(g_notebook_sidebar));
+    g_clear_signal_handler(&g_handle_grab_focus,
+                           GTK_WIDGET(g_notebook_sidebar));
+    g_clear_signal_handler(&g_handle_grab_notify,
+                           GTK_WIDGET(g_notebook_sidebar));
+  }
+}
+
+// Signal sent when focus has been lost...
+static void on_grab_notify(GtkWidget *self, gboolean was_grabbed,
+                           gpointer user_data) {
+  gint num_pages = gtk_notebook_get_n_pages(g_notebook_sidebar);
+  gint cur_page = gtk_notebook_get_current_page(g_notebook_sidebar);
+  GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_sidebar, cur_page);
+
+  for (int i = 0; i < num_pages; i++) {
+    GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_sidebar, i);
+    gchar *text =
+        g_strdup(gtk_notebook_get_tab_label_text(g_notebook_sidebar, page));
+
+    GtkWidget *label = gtk_notebook_get_tab_label(g_notebook_sidebar, page);
+    gtk_label_set_markup(GTK_LABEL(label), text);
+  }
+
+  if (!settings.sidebar_focus_enabled) {
+    sidebar_focus_update();
+  }
+}
+
+// Signal sent when notebook itself has focus...
+static void on_grab_focus(GtkWidget *self, gpointer user_data) {
+  sidebar_focus_highlight();
+}
+
+// Signal sent when notebook child has focus...
+static void on_set_focus_child(GtkContainer *self, GtkWidget *object,
+                               gpointer user_data) {
+  sidebar_focus_highlight();
+}
+
+static void sidebar_focus_highlight() {
+  if (!settings.sidebar_focus_enabled) {
+    sidebar_focus_update();
+    return;
+  }
+
+  gint num_pages = gtk_notebook_get_n_pages(g_notebook_sidebar);
+  gint cur_page = gtk_notebook_get_current_page(g_notebook_sidebar);
+  GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_sidebar, cur_page);
+
+  for (int i = 0; i < num_pages; i++) {
+    GtkWidget *page = gtk_notebook_get_nth_page(g_notebook_sidebar, i);
+    gchar *text =
+        g_strdup(gtk_notebook_get_tab_label_text(g_notebook_sidebar, page));
+
+    GtkWidget *label = gtk_notebook_get_tab_label(g_notebook_sidebar, page);
+
+    if (i == cur_page) {
+      if (settings.sidebar_focus_bold) {
+        gchar *tmp = g_strjoin(NULL, "<b>", text, "</b>", NULL);
+        g_free(text);
+        text = tmp;
+      }
+      msgwin_status_add("color = %s", settings.sidebar_focus_color);
+      if (settings.sidebar_focus_color) {
+        gchar *tmp =
+            g_strjoin(NULL, "<span color='", settings.sidebar_focus_color, "'>", text, "</span>", NULL);
+        g_free(text);
+        text = tmp;
+      }
+    }
+
+    gtk_label_set_markup(GTK_LABEL(label), text);
+  }
+}
+
+/* ********************
+ * Keybinding Functions and Callbacks
  */
 
 void on_toggle_editor_sidebar_msgwin() {
@@ -283,31 +403,6 @@ bool on_key_binding(int key_id) {
   return TRUE;
 }
 
-/* ********************
- * Geany Signal Callbacks
- */
-
-static void on_document_signal(GObject *obj, GeanyDocument *doc,
-                               gpointer user_data) {
-  if (settings.column_marker_enable && DOC_VALID(doc)) {
-    scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
-    scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
-
-    if (settings.column_marker_columns != NULL &&
-        settings.column_marker_colors != NULL) {
-      for (int i = 0; i < settings.column_marker_count; i++) {
-        scintilla_send_message(doc->editor->sci, SCI_MULTIEDGEADDLINE,
-                               settings.column_marker_columns[i],
-                               settings.column_marker_colors[i]);
-      }
-    }
-  }
-}
-
-/* ********************
- * Other functions
- */
-
 static GtkWidget *find_focus_widget(GtkWidget *widget) {
   GtkWidget *focus = NULL;
 
@@ -330,4 +425,25 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
     focus = widget;
   }
   return focus;
+}
+
+/* ********************
+ * Geany Signal Callbacks
+ */
+
+static void on_document_signal(GObject *obj, GeanyDocument *doc,
+                               gpointer user_data) {
+  if (settings.column_marker_enable && DOC_VALID(doc)) {
+    scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
+    scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
+
+    if (settings.column_marker_columns != NULL &&
+        settings.column_marker_colors != NULL) {
+      for (int i = 0; i < settings.column_marker_count; i++) {
+        scintilla_send_message(doc->editor->sci, SCI_MULTIEDGEADDLINE,
+                               settings.column_marker_columns[i],
+                               settings.column_marker_colors[i]);
+      }
+    }
+  }
 }

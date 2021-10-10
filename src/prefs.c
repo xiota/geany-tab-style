@@ -86,6 +86,10 @@ void save_settings() {
       kf, fn, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
 
   // Update settings with new contents
+  SET_KEY(boolean, "sidebar_focus_enabled", settings.sidebar_focus_enabled);
+  SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
+  SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
+
   SET_KEY(boolean, "column_marker_enable", settings.column_marker_enable);
 
   g_key_file_set_integer_list(kf, PLUGIN_GROUP, "column_marker_columns",
@@ -111,6 +115,10 @@ void load_settings(GKeyFile *kf) {
   if (!g_key_file_has_group(kf, "tweaks")) {
     return;
   }
+
+  LOAD_KEY_BOOLEAN(sidebar_focus_enabled, FALSE);
+  LOAD_KEY_BOOLEAN(sidebar_focus_bold, FALSE);
+  LOAD_KEY_STRING(sidebar_focus_color, "initial");
 
   LOAD_KEY_BOOLEAN(column_marker_enable, TRUE);
 
@@ -146,6 +154,10 @@ void load_settings(GKeyFile *kf) {
 }
 
 void init_settings() {
+  settings.sidebar_focus_enabled = FALSE;
+  settings.sidebar_focus_bold = FALSE;
+  settings.sidebar_focus_color = g_strdup("initial");
+
   settings.column_marker_count = 13;
   settings.column_marker_columns = g_malloc(13 * sizeof(int));
   settings.column_marker_colors = g_malloc(13 * sizeof(int));
