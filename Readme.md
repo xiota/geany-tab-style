@@ -1,11 +1,15 @@
 # Xi/Tweaks Plugin for Geany
 
-This plugin provides some minor tweaks for Geany that don't fit anywhere else.
+This plugin provides miscellaneous tweaks for Geany that don't fit anywhere else.
 
 ## Features
 
-* Multiple column markers
-* Highlight sidebar tab on focus
+* Show multiple column markers in the editor.
+* Set a keybinding to switch among Editor, Sidebar, and Message Window.
+* Highlight sidebar tabs that have keyboard focus.
+* Save different sidebar sizes for different window states.
+* Auto size the sidebar according to window state.
+* Quick access to the Geany user config folder.
 
 ## Installation
 

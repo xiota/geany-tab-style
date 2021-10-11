@@ -22,6 +22,8 @@
 #include "config.h"
 #endif
 
+#include <time.h>
+
 #include "plugin.h"
 #include "prefs.h"
 
@@ -40,10 +42,10 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data);
 
 // Sidebar Tab Focus Callbacks
 static void sidebar_focus_update(gboolean enable);
-static void on_grab_notify(GtkWidget *self, gboolean was_grabbed,
-                           gpointer user_data);
 static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
                            gpointer user_data);
+static gboolean on_select_page(GtkNotebook *self, gboolean object,
+                               gpointer user_data);
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
 static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
 static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
@@ -53,7 +55,7 @@ static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data);
 static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data);
-static void sidebar_focus_highlight();
+static gboolean sidebar_focus_highlight(gboolean highlight);
 
 // Preferences Callbacks
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog);
@@ -74,6 +76,9 @@ static GtkWidget *find_focus_widget(GtkWidget *widget);
 // Geany Signal Callbacks
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
+
+// Other functions
+static void show_column_markers();
 
 /* ********************
  * Globals
@@ -96,12 +101,15 @@ static gulong g_handle_set_focus_child_editor = 0;
 static gulong g_handle_grab_focus_sidebar = 0;
 static gulong g_handle_grab_focus_msgwin = 0;
 static gulong g_handle_grab_focus_editor = 0;
-static gulong g_handle_grab_notify = 0;
 static gulong g_handle_switch_page = 0;
+static gulong g_handle_select_page = 0;
 static gulong g_handle_pane_position = 0;
 
 static gulong g_handle_tab_object = 0;
 static GtkWidget *g_tab_object = NULL;
+
+static clock_t g_lost_focus_clock = 0;
+static clock_t g_gain_focus_clock = 0;
 
 /* ********************
  * Plugin Setup
@@ -119,15 +127,6 @@ void plugin_init(GeanyData *data) {
   GEANY_PSC("document-new", on_document_signal);
   GEANY_PSC("document-open", on_document_signal);
   GEANY_PSC("document-reload", on_document_signal);
-
-  // Set keyboard shortcuts
-  GeanyKeyGroup *group = plugin_set_key_group(
-      geany_plugin, _("Xi/Tweaks"), 1, (GeanyKeyGroupCallback)on_key_binding);
-
-  keybindings_set_item(
-      group, TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
-      "xitweaks_toggle_editor_sidebar_msgwin",
-      _("Switch focus among editor, sidebar, and message window."), NULL);
 
   tweaks_init(geany_plugin, geany_data);
 }
@@ -187,9 +186,23 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   gtk_menu_shell_append(GTK_MENU_SHELL(geany_data->main_widgets->tools_menu),
                         g_tweaks_menu);
 
+  // Set keyboard shortcuts
+  GeanyKeyGroup *group = plugin_set_key_group(
+      geany_plugin, _("Xi/Tweaks"), 1, (GeanyKeyGroupCallback)on_key_binding);
+
+  keybindings_set_item(
+      group, TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
+      "xitweaks_toggle_editor_sidebar_msgwin",
+      _("Switch focus among editor, sidebar, and message window."), NULL);
+
+  // Enable features
   pane_position_update(settings.hpaned_position_enabled ||
                        settings.hpaned_position_auto);
   sidebar_focus_update(settings.sidebar_focus_enabled);
+  g_lost_focus_clock = g_gain_focus_clock = clock();
+
+  show_column_markers();
+
   return TRUE;
 }
 
@@ -388,13 +401,13 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
  */
 
 static void sidebar_focus_update(gboolean enable) {
-  if (enable && !g_handle_grab_notify) {
-    g_handle_grab_notify =
-        g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-notify",
-                         G_CALLBACK(on_grab_notify), NULL);
+  if (enable && !g_handle_switch_page) {
     g_handle_switch_page =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "switch-page",
                          G_CALLBACK(on_switch_page), NULL);
+    g_handle_select_page =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "select-page",
+                         G_CALLBACK(on_select_page), NULL);
 
     g_handle_set_focus_child_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
@@ -417,8 +430,8 @@ static void sidebar_focus_update(gboolean enable) {
                          G_CALLBACK(on_grab_focus_editor), NULL);
   }
 
-  if (!enable && g_handle_grab_notify) {
-    g_clear_signal_handler(&g_handle_grab_notify, GTK_WIDGET(geany_sidebar));
+  if (!enable && g_handle_switch_page) {
+    g_clear_signal_handler(&g_handle_switch_page, GTK_WIDGET(geany_sidebar));
 
     g_clear_signal_handler(&g_handle_set_focus_child_sidebar,
                            GTK_WIDGET(geany_sidebar));
@@ -436,52 +449,74 @@ static void sidebar_focus_update(gboolean enable) {
   }
 }
 
-// Signal sent when focus has been lost...
-static void on_grab_notify(GtkWidget *self, gboolean was_grabbed,
-                           gpointer user_data) {
-  sidebar_focus_highlight(FALSE);
-}
-
 static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
                            gpointer user_data) {
+  // msgwin_status_add("switch page");
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
-    // needs to be delayed to prevent race condition
-    // with wrong tab highlighted
-    g_timeout_add(50, G_SOURCE_FUNC(sidebar_focus_highlight), (gpointer)TRUE);
+    // prevent race condition
+    g_timeout_add(25, G_SOURCE_FUNC(sidebar_focus_highlight), (gpointer)TRUE);
   }
 }
 
+static gboolean on_select_page(GtkNotebook *self, gboolean object,
+                               gpointer user_data) {
+  // msgwin_status_add("select page");
+  if (gtk_widget_has_focus(GTK_WIDGET(self))) {
+    // prevent race condition
+    sidebar_focus_highlight(TRUE);
+  }
+  return FALSE;
+}
+
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data) {
+  // msgwin_status_add("grab focus sidebar");
   sidebar_focus_highlight(TRUE);
 }
 
 static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data) {
+  // msgwin_status_add("grab focus msgwin");
   sidebar_focus_highlight(FALSE);
 }
 
 static void on_grab_focus_editor(GtkWidget *self, gpointer user_data) {
+  // msgwin_status_add("grab focus editor");
   sidebar_focus_highlight(FALSE);
 }
 
 static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
                                        gpointer user_data) {
+  // msgwin_status_add("set focus child sidebar");
   sidebar_focus_highlight(TRUE);
 }
 
 static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
+  // msgwin_status_add("set focus child msgwin");
   sidebar_focus_highlight(FALSE);
 }
 
 static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
+  // msgwin_status_add("set focus child editor");
   sidebar_focus_highlight(FALSE);
 }
 
-static void sidebar_focus_highlight(gboolean highlight) {
+static gboolean sidebar_focus_highlight(gboolean highlight) {
+  static gboolean has_focus = FALSE;
+
+  if (!has_focus && !highlight) {
+    return FALSE;
+  }
+
   if (!settings.sidebar_focus_enabled) {
     sidebar_focus_update(FALSE);
     highlight = FALSE;
+  }
+  if (highlight && clock() - g_lost_focus_clock < 100) {
+    return FALSE;
+  }
+  if (!highlight && clock() - g_gain_focus_clock < 100) {
+    return FALSE;
   }
 
   gint num_pages = gtk_notebook_get_n_pages(geany_sidebar);
@@ -512,6 +547,16 @@ static void sidebar_focus_highlight(gboolean highlight) {
 
     gtk_label_set_markup(GTK_LABEL(label), text);
   }
+
+  sidebar_focus_update(settings.sidebar_focus_enabled);
+  has_focus = highlight;
+
+  if (highlight) {
+    g_gain_focus_clock = clock();
+  } else {
+    g_lost_focus_clock = clock();
+  }
+  return FALSE;
 }
 
 /* ********************
@@ -579,6 +624,15 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {
+  show_column_markers();
+}
+
+/* ********************
+ * Other Functions
+ */
+
+static void show_column_markers() {
+  GeanyDocument *doc = document_get_current();
   if (settings.column_marker_enable && DOC_VALID(doc)) {
     scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
     scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
