@@ -34,6 +34,7 @@ struct TweakSettings {
   gboolean hpaned_position_update;
   int hpaned_position_normal;
   int hpaned_position_maximized;
+  gboolean hpaned_position_auto;
 
   gboolean column_marker_enable;
   int column_marker_count;

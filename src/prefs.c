@@ -96,6 +96,8 @@ void save_settings() {
   SET_KEY(integer, "hpaned_position_maximized",
           settings.hpaned_position_maximized);
 
+  SET_KEY(boolean, "hpaned_position_auto", settings.hpaned_position_auto);
+
   SET_KEY(boolean, "column_marker_enable", settings.column_marker_enable);
 
   g_key_file_set_integer_list(kf, PLUGIN_GROUP, "column_marker_columns",
@@ -130,6 +132,8 @@ void load_settings(GKeyFile *kf) {
   LOAD_KEY_BOOLEAN(hpaned_position_update, TRUE);
   LOAD_KEY_INTEGER(hpaned_position_normal, 0, 0);
   LOAD_KEY_INTEGER(hpaned_position_maximized, 0, 0);
+
+  LOAD_KEY_BOOLEAN(hpaned_position_auto, FALSE);
 
   LOAD_KEY_BOOLEAN(column_marker_enable, TRUE);
 
@@ -173,6 +177,8 @@ void init_settings() {
   settings.hpaned_position_update = TRUE;
   settings.hpaned_position_normal = 0;
   settings.hpaned_position_maximized = 0;
+
+  settings.hpaned_position_auto = FALSE;
 
   settings.column_marker_count = 13;
   settings.column_marker_columns = g_malloc(13 * sizeof(int));
