@@ -200,8 +200,8 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                        _("Toggle visibility of the menubar."), NULL);
 
   // Enable features
-  pane_position_update(settings.hpaned_save_size_enabled ||
-                       settings.hpaned_auto_size_enabled);
+  pane_position_update(settings.sidebar_save_size_enabled ||
+                       settings.sidebar_auto_size_enabled);
   sidebar_focus_update(settings.sidebar_focus_enabled);
   g_lost_focus_clock = g_gain_focus_clock = clock();
 
@@ -284,8 +284,8 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
 
-  pane_position_update(settings.hpaned_save_size_enabled ||
-                       settings.hpaned_auto_size_enabled);
+  pane_position_update(settings.sidebar_save_size_enabled ||
+                       settings.sidebar_auto_size_enabled);
   sidebar_focus_update(settings.sidebar_focus_enabled);
 
   if (settings.hide_menubar) {
@@ -348,8 +348,8 @@ static void pane_position_update(gboolean enable) {
 }
 
 static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
-  if (!settings.hpaned_save_size_enabled &&
-      !settings.hpaned_auto_size_enabled) {
+  if (!settings.sidebar_save_size_enabled &&
+      !settings.sidebar_auto_size_enabled) {
     pane_position_update(FALSE);
     return FALSE;
   }
@@ -357,13 +357,13 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
   int pos_auto_normal = 0;
   int pos_auto_maximized = 0;
 
-  if (settings.hpaned_auto_size_enabled) {
+  if (settings.sidebar_auto_size_enabled) {
     GeanyDocument *doc = document_get_current();
     if (doc != NULL) {
       const char *const str_auto_normal =
-          g_strnfill(settings.hpaned_auto_size_normal, '0');
+          g_strnfill(settings.sidebar_auto_size_normal, '0');
       const char *const str_auto_maximized =
-          g_strnfill(settings.hpaned_auto_size_maximized, '0');
+          g_strnfill(settings.sidebar_auto_size_maximized, '0');
 
       const int pos_origin = (int)scintilla_send_message(
           doc->editor->sci, SCI_POINTXFROMPOSITION, 0, 1);
@@ -382,16 +382,16 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
 
   if (window_maximized_current == window_maximized_previous) {
     // save current sidebar divider position
-    if (settings.hpaned_save_size_update) {
+    if (settings.sidebar_save_size_update) {
       if (window_maximized_current) {
-        settings.hpaned_save_size_maximized =
+        settings.sidebar_save_size_maximized =
             gtk_paned_get_position(GTK_PANED(self));
       } else {
-        settings.hpaned_save_size_normal =
+        settings.sidebar_save_size_normal =
             gtk_paned_get_position(GTK_PANED(self));
       }
     }
-  } else if (settings.hpaned_auto_size_enabled) {
+  } else if (settings.sidebar_auto_size_enabled) {
     if (window_maximized_current) {
       if (pos_auto_maximized > 100) {
         gtk_paned_set_position(GTK_PANED(self), pos_auto_maximized);
@@ -402,16 +402,16 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
       }
     }
     window_maximized_previous = window_maximized_current;
-  } else if (settings.hpaned_save_size_enabled) {
+  } else if (settings.sidebar_save_size_enabled) {
     if (window_maximized_current) {
-      if (settings.hpaned_save_size_maximized) {
+      if (settings.sidebar_save_size_maximized) {
         gtk_paned_set_position(GTK_PANED(self),
-                               settings.hpaned_save_size_maximized);
+                               settings.sidebar_save_size_maximized);
       }
     } else {
-      if (settings.hpaned_save_size_normal) {
+      if (settings.sidebar_save_size_normal) {
         gtk_paned_set_position(GTK_PANED(self),
-                               settings.hpaned_save_size_normal);
+                               settings.sidebar_save_size_normal);
       }
     }
     window_maximized_previous = window_maximized_current;

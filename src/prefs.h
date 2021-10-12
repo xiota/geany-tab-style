@@ -30,14 +30,14 @@ struct TweakSettings {
   gboolean sidebar_focus_bold;
   gchar *sidebar_focus_color;
 
-  gboolean hpaned_save_size_enabled;
-  gboolean hpaned_save_size_update;
-  int hpaned_save_size_normal;
-  int hpaned_save_size_maximized;
+  gboolean sidebar_save_size_enabled;
+  gboolean sidebar_save_size_update;
+  int sidebar_save_size_normal;
+  int sidebar_save_size_maximized;
 
-  gboolean hpaned_auto_size_enabled;
-  int hpaned_auto_size_normal;
-  int hpaned_auto_size_maximized;
+  gboolean sidebar_auto_size_enabled;
+  int sidebar_auto_size_normal;
+  int sidebar_auto_size_maximized;
 
   gboolean hide_menubar;
 

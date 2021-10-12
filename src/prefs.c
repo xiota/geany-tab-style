@@ -90,15 +90,15 @@ void save_settings() {
   SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
   SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
-  SET_KEY(boolean, "hpaned_save_size_enabled", settings.hpaned_save_size_enabled);
-  SET_KEY(boolean, "hpaned_save_size_update", settings.hpaned_save_size_update);
-  SET_KEY(integer, "hpaned_save_size_normal", settings.hpaned_save_size_normal);
-  SET_KEY(integer, "hpaned_save_size_maximized",
-          settings.hpaned_save_size_maximized);
+  SET_KEY(boolean, "sidebar_save_size_enabled", settings.sidebar_save_size_enabled);
+  SET_KEY(boolean, "sidebar_save_size_update", settings.sidebar_save_size_update);
+  SET_KEY(integer, "sidebar_save_size_normal", settings.sidebar_save_size_normal);
+  SET_KEY(integer, "sidebar_save_size_maximized",
+          settings.sidebar_save_size_maximized);
 
-  SET_KEY(boolean, "hpaned_auto_size_enabled", settings.hpaned_auto_size_enabled);
-  SET_KEY(integer, "hpaned_auto_size_normal", settings.hpaned_auto_size_normal);
-  SET_KEY(integer, "hpaned_auto_size_maximized", settings.hpaned_auto_size_maximized);
+  SET_KEY(boolean, "sidebar_auto_size_enabled", settings.sidebar_auto_size_enabled);
+  SET_KEY(integer, "sidebar_auto_size_normal", settings.sidebar_auto_size_normal);
+  SET_KEY(integer, "sidebar_auto_size_maximized", settings.sidebar_auto_size_maximized);
 
 
 
@@ -135,14 +135,14 @@ void load_settings(GKeyFile *kf) {
   LOAD_KEY_BOOLEAN(sidebar_focus_bold, FALSE);
   LOAD_KEY_STRING(sidebar_focus_color, "green");
 
-  LOAD_KEY_BOOLEAN(hpaned_save_size_enabled, TRUE);
-  LOAD_KEY_BOOLEAN(hpaned_save_size_update, TRUE);
-  LOAD_KEY_INTEGER(hpaned_save_size_normal, 0, 0);
-  LOAD_KEY_INTEGER(hpaned_save_size_maximized, 0, 0);
+  LOAD_KEY_BOOLEAN(sidebar_save_size_enabled, TRUE);
+  LOAD_KEY_BOOLEAN(sidebar_save_size_update, TRUE);
+  LOAD_KEY_INTEGER(sidebar_save_size_normal, 0, 0);
+  LOAD_KEY_INTEGER(sidebar_save_size_maximized, 0, 0);
 
-  LOAD_KEY_BOOLEAN(hpaned_auto_size_enabled, FALSE);
-  LOAD_KEY_INTEGER(hpaned_auto_size_normal, 76, 0);
-  LOAD_KEY_INTEGER(hpaned_auto_size_maximized, 100, 0);
+  LOAD_KEY_BOOLEAN(sidebar_auto_size_enabled, FALSE);
+  LOAD_KEY_INTEGER(sidebar_auto_size_normal, 76, 0);
+  LOAD_KEY_INTEGER(sidebar_auto_size_maximized, 100, 0);
 
   LOAD_KEY_BOOLEAN(hide_menubar, FALSE);
 
@@ -184,14 +184,14 @@ void init_settings() {
   settings.sidebar_focus_bold = FALSE;
   settings.sidebar_focus_color = g_strdup("green");
 
-  settings.hpaned_save_size_enabled = TRUE;
-  settings.hpaned_save_size_update = TRUE;
-  settings.hpaned_save_size_normal = 0;
-  settings.hpaned_save_size_maximized = 0;
+  settings.sidebar_save_size_enabled = TRUE;
+  settings.sidebar_save_size_update = TRUE;
+  settings.sidebar_save_size_normal = 0;
+  settings.sidebar_save_size_maximized = 0;
 
-  settings.hpaned_auto_size_enabled = FALSE;
-  settings.hpaned_auto_size_normal = 76;
-  settings.hpaned_auto_size_maximized = 100;
+  settings.sidebar_auto_size_enabled = FALSE;
+  settings.sidebar_auto_size_normal = 76;
+  settings.sidebar_auto_size_maximized = 100;
 
   settings.hide_menubar = FALSE;
 
