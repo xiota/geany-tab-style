@@ -90,13 +90,20 @@ void save_settings() {
   SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
   SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
-  SET_KEY(boolean, "hpaned_position_enabled", settings.hpaned_position_enabled);
-  SET_KEY(boolean, "hpaned_position_update", settings.hpaned_position_update);
-  SET_KEY(integer, "hpaned_position_normal", settings.hpaned_position_normal);
-  SET_KEY(integer, "hpaned_position_maximized",
-          settings.hpaned_position_maximized);
+  SET_KEY(boolean, "hpaned_save_size_enabled", settings.hpaned_save_size_enabled);
+  SET_KEY(boolean, "hpaned_save_size_update", settings.hpaned_save_size_update);
+  SET_KEY(integer, "hpaned_save_size_normal", settings.hpaned_save_size_normal);
+  SET_KEY(integer, "hpaned_save_size_maximized",
+          settings.hpaned_save_size_maximized);
 
-  SET_KEY(boolean, "hpaned_position_auto", settings.hpaned_position_auto);
+  SET_KEY(boolean, "hpaned_auto_size_enabled", settings.hpaned_auto_size_enabled);
+  SET_KEY(integer, "hpaned_auto_size_normal", settings.hpaned_auto_size_normal);
+  SET_KEY(integer, "hpaned_auto_size_maximized", settings.hpaned_auto_size_maximized);
+
+
+
+
+  SET_KEY(boolean, "hide_menubar", settings.hide_menubar);
 
   SET_KEY(boolean, "column_marker_enable", settings.column_marker_enable);
 
@@ -128,12 +135,16 @@ void load_settings(GKeyFile *kf) {
   LOAD_KEY_BOOLEAN(sidebar_focus_bold, FALSE);
   LOAD_KEY_STRING(sidebar_focus_color, "green");
 
-  LOAD_KEY_BOOLEAN(hpaned_position_enabled, TRUE);
-  LOAD_KEY_BOOLEAN(hpaned_position_update, TRUE);
-  LOAD_KEY_INTEGER(hpaned_position_normal, 0, 0);
-  LOAD_KEY_INTEGER(hpaned_position_maximized, 0, 0);
+  LOAD_KEY_BOOLEAN(hpaned_save_size_enabled, TRUE);
+  LOAD_KEY_BOOLEAN(hpaned_save_size_update, TRUE);
+  LOAD_KEY_INTEGER(hpaned_save_size_normal, 0, 0);
+  LOAD_KEY_INTEGER(hpaned_save_size_maximized, 0, 0);
 
-  LOAD_KEY_BOOLEAN(hpaned_position_auto, FALSE);
+  LOAD_KEY_BOOLEAN(hpaned_auto_size_enabled, FALSE);
+  LOAD_KEY_INTEGER(hpaned_auto_size_normal, 76, 0);
+  LOAD_KEY_INTEGER(hpaned_auto_size_maximized, 100, 0);
+
+  LOAD_KEY_BOOLEAN(hide_menubar, FALSE);
 
   LOAD_KEY_BOOLEAN(column_marker_enable, TRUE);
 
@@ -173,12 +184,16 @@ void init_settings() {
   settings.sidebar_focus_bold = FALSE;
   settings.sidebar_focus_color = g_strdup("green");
 
-  settings.hpaned_position_enabled = TRUE;
-  settings.hpaned_position_update = TRUE;
-  settings.hpaned_position_normal = 0;
-  settings.hpaned_position_maximized = 0;
+  settings.hpaned_save_size_enabled = TRUE;
+  settings.hpaned_save_size_update = TRUE;
+  settings.hpaned_save_size_normal = 0;
+  settings.hpaned_save_size_maximized = 0;
 
-  settings.hpaned_position_auto = FALSE;
+  settings.hpaned_auto_size_enabled = FALSE;
+  settings.hpaned_auto_size_normal = 76;
+  settings.hpaned_auto_size_maximized = 100;
+
+  settings.hide_menubar = FALSE;
 
   settings.column_marker_count = 13;
   settings.column_marker_columns = g_malloc(13 * sizeof(int));

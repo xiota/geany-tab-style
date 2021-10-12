@@ -66,11 +66,9 @@ static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog);
 static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog);
 
 // Keybinding Functions and Callbacks
-void on_toggle_editor_vte();
-void on_toggle_editor_sidebar();
-void on_toggle_editor_msgwin();
-void on_toggle_editor_sidebar_msgwin();
-bool on_key_binding(int key_id);
+static void on_switch_focus_editor_sidebar_msgwin();
+static void on_toggle_visibility_menubar();
+static bool on_key_binding(int key_id);
 static GtkWidget *find_focus_widget(GtkWidget *widget);
 
 // Geany Signal Callbacks
@@ -91,6 +89,7 @@ static GtkNotebook *geany_sidebar = NULL;
 static GtkNotebook *geany_msgwin = NULL;
 static GtkNotebook *geany_editor = NULL;
 static GtkWidget *geany_hpane = NULL;
+static GtkWidget *geany_menubar = NULL;
 
 GtkWidget *g_tweaks_menu = NULL;
 static GeanyDocument *g_current_doc = NULL;
@@ -151,6 +150,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_msgwin = GTK_NOTEBOOK(geany->main_widgets->message_window_notebook);
   geany_editor = GTK_NOTEBOOK(geany->main_widgets->notebook);
   geany_hpane = ui_lookup_widget(GTK_WIDGET(geany_window), "hpaned1");
+  geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
   // set up menu
   GtkWidget *item;
@@ -188,18 +188,28 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
 
   // Set keyboard shortcuts
   GeanyKeyGroup *group = plugin_set_key_group(
-      geany_plugin, _("Xi/Tweaks"), 1, (GeanyKeyGroupCallback)on_key_binding);
+      geany_plugin, _("Xi/Tweaks"), 2, (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
-      group, TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
-      "xitweaks_toggle_editor_sidebar_msgwin",
+      group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
+      "xitweaks_switch_focus_editor_sidebar_msgwin",
       _("Switch focus among editor, sidebar, and message window."), NULL);
 
+  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, NULL, 0, 0,
+                       "xitweaks_toggle_visibility_menubar_",
+                       _("Toggle visibility of the menubar."), NULL);
+
   // Enable features
-  pane_position_update(settings.hpaned_position_enabled ||
-                       settings.hpaned_position_auto);
+  pane_position_update(settings.hpaned_save_size_enabled ||
+                       settings.hpaned_auto_size_enabled);
   sidebar_focus_update(settings.sidebar_focus_enabled);
   g_lost_focus_clock = g_gain_focus_clock = clock();
+
+  if (settings.hide_menubar) {
+    gtk_widget_hide(geany_menubar);
+  } else {
+    gtk_widget_show(geany_menubar);
+  }
 
   show_column_markers();
 
@@ -274,9 +284,15 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
 
-  pane_position_update(settings.hpaned_position_enabled ||
-                       settings.hpaned_position_auto);
+  pane_position_update(settings.hpaned_save_size_enabled ||
+                       settings.hpaned_auto_size_enabled);
   sidebar_focus_update(settings.sidebar_focus_enabled);
+
+  if (settings.hide_menubar) {
+    gtk_widget_hide(geany_menubar);
+  } else {
+    gtk_widget_show(geany_menubar);
+  }
 }
 
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog) {
@@ -332,36 +348,31 @@ static void pane_position_update(gboolean enable) {
 }
 
 static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
-  if (!settings.hpaned_position_enabled && !settings.hpaned_position_auto) {
+  if (!settings.hpaned_save_size_enabled &&
+      !settings.hpaned_auto_size_enabled) {
     pane_position_update(FALSE);
     return FALSE;
   }
 
-  static int pos76 = 0;
-  static int pos100 = 0;
+  int pos_auto_normal = 0;
+  int pos_auto_maximized = 0;
 
-  if (settings.hpaned_position_auto) {
-    if (pos76 < 1 || pos100 < 1) {
-      pos76 = settings.hpaned_position_normal;
-      pos100 = settings.hpaned_position_maximized;
-    }
-
+  if (settings.hpaned_auto_size_enabled) {
     GeanyDocument *doc = document_get_current();
     if (doc != NULL) {
-      const char *char76 =
-          "12345678901234567890123456789012345678901234567890"
-          "12345678901234567890213456";
-      const char *char100 =
-          "12345678901234567890123456789012345678901234567890"
-          "12345678901234567890123456789012345678901234567890";
-      int col00 = (int)scintilla_send_message(doc->editor->sci,
-                                              SCI_POINTXFROMPOSITION, 0, 1);
-      const int col76 = (int)scintilla_send_message(
-          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)char76);
-      const int col100 = (int)scintilla_send_message(
-          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)char100);
-      pos76 = col00 + col76;
-      pos100 = col00 + col100;
+      const char *const str_auto_normal =
+          g_strnfill(settings.hpaned_auto_size_normal, '0');
+      const char *const str_auto_maximized =
+          g_strnfill(settings.hpaned_auto_size_maximized, '0');
+
+      const int pos_origin = (int)scintilla_send_message(
+          doc->editor->sci, SCI_POINTXFROMPOSITION, 0, 1);
+      const int pos_normal = (int)scintilla_send_message(
+          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_normal);
+      const int pos_maximized = (int)scintilla_send_message(
+          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_maximized);
+      pos_auto_normal = pos_origin + pos_normal;
+      pos_auto_maximized = pos_origin + pos_maximized;
     }
   }
 
@@ -370,25 +381,38 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
       gtk_window_is_maximized(geany_window);
 
   if (window_maximized_current == window_maximized_previous) {
-    if (settings.hpaned_position_update && window_maximized_current) {
-      settings.hpaned_position_maximized =
-          gtk_paned_get_position(GTK_PANED(self));
-    } else if (settings.hpaned_position_update && !window_maximized_current) {
-      settings.hpaned_position_normal = gtk_paned_get_position(GTK_PANED(self));
+    // save current sidebar divider position
+    if (settings.hpaned_save_size_update) {
+      if (window_maximized_current) {
+        settings.hpaned_save_size_maximized =
+            gtk_paned_get_position(GTK_PANED(self));
+      } else {
+        settings.hpaned_save_size_normal =
+            gtk_paned_get_position(GTK_PANED(self));
+      }
     }
-  } else if (window_maximized_current && settings.hpaned_position_maximized) {
-    if (settings.hpaned_position_auto) {
-      gtk_paned_set_position(GTK_PANED(self), pos100);
+  } else if (settings.hpaned_auto_size_enabled) {
+    if (window_maximized_current) {
+      if (pos_auto_maximized > 100) {
+        gtk_paned_set_position(GTK_PANED(self), pos_auto_maximized);
+      }
     } else {
-      gtk_paned_set_position(GTK_PANED(self),
-                             settings.hpaned_position_maximized);
+      if (pos_auto_normal > 100) {
+        gtk_paned_set_position(GTK_PANED(self), pos_auto_normal);
+      }
     }
     window_maximized_previous = window_maximized_current;
-  } else if (!window_maximized_current && settings.hpaned_position_normal) {
-    if (settings.hpaned_position_auto) {
-      gtk_paned_set_position(GTK_PANED(self), pos76);
+  } else if (settings.hpaned_save_size_enabled) {
+    if (window_maximized_current) {
+      if (settings.hpaned_save_size_maximized) {
+        gtk_paned_set_position(GTK_PANED(self),
+                               settings.hpaned_save_size_maximized);
+      }
     } else {
-      gtk_paned_set_position(GTK_PANED(self), settings.hpaned_position_normal);
+      if (settings.hpaned_save_size_normal) {
+        gtk_paned_set_position(GTK_PANED(self),
+                               settings.hpaned_save_size_normal);
+      }
     }
     window_maximized_previous = window_maximized_current;
   }
@@ -563,7 +587,7 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
  * Keybinding Functions and Callbacks
  */
 
-void on_toggle_editor_sidebar_msgwin() {
+static void on_switch_focus_editor_sidebar_msgwin() {
   GeanyDocument *doc = document_get_current();
   if (doc != NULL) {
     gint cur_page = gtk_notebook_get_current_page(geany_sidebar);
@@ -583,10 +607,21 @@ void on_toggle_editor_sidebar_msgwin() {
   }
 }
 
-bool on_key_binding(int key_id) {
+static void on_toggle_visibility_menubar() {
+  if (gtk_widget_is_visible(geany_menubar)) {
+    gtk_widget_hide(geany_menubar);
+  } else {
+    gtk_widget_show(geany_menubar);
+  }
+}
+
+static bool on_key_binding(int key_id) {
   switch (key_id) {
-    case TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN:
-      on_toggle_editor_sidebar_msgwin();
+    case TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN:
+      on_switch_focus_editor_sidebar_msgwin();
+      break;
+    case TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR:
+      on_toggle_visibility_menubar();
       break;
     default:
       return FALSE;

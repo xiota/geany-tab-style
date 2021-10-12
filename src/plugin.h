@@ -43,7 +43,8 @@ extern GeanyData *geany_data;
 extern struct TweakSettings settings;
 
 enum TweakShortcuts {
-  TWEAKS_KEY_TOGGLE_EDITOR_SIDEBAR_MSGWIN,
+  TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN,
+  TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR,
 };
 
 #define GEANY_PSC(sig, cb) \
