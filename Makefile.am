@@ -11,14 +11,14 @@ cf_data_DATA = \
 geany_plugindir = $(libdir)/geany
 geany_plugin_LTLIBRARIES = xi_tweaks.la
 
-xi_tweaks_la_CFLAGS = $(GEANY_CFLAGS) $(WEBKIT_CFLAGS) $(CMARK_CFLAGS) \
+xi_tweaks_la_CXXFLAGS = $(GEANY_CFLAGS) \
 	-DG_LOG_DOMAIN=\""Tweaks"\" \
 	-DTWEAKS_README=\""$(cf_docdir)/Readme.md"\" \
 	-DTWEAKS_CONFIG=\""$(cf_datadir)/xi-tweaks.conf"\"
 xi_tweaks_la_LIBADD = $(GEANY_LIBS)
 xi_tweaks_la_LDFLAGS = -module -avoid-version
 xi_tweaks_la_SOURCES = \
-	src/plugin.c \
+	src/plugin.cc \
 	src/plugin.h \
-	src/prefs.c \
+	src/prefs.cc \
 	src/prefs.h

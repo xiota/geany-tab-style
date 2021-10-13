@@ -47,25 +47,26 @@ enum TweakShortcuts {
   TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR,
 };
 
-#define GEANY_PSC(sig, cb) \
-  plugin_signal_connect(geany_plugin, NULL, (sig), TRUE, G_CALLBACK(cb), NULL)
+#define GEANY_PSC(sig, cb)                                                  \
+  plugin_signal_connect(geany_plugin, nullptr, (sig), TRUE, G_CALLBACK(cb), \
+                        nullptr)
 
 #define GFREE(_z_) \
   do {             \
     g_free(_z_);   \
-    _z_ = NULL;    \
+    _z_ = nullptr; \
   } while (0)
 
 #define GSTRING_FREE(_z_)     \
   do {                        \
     g_string_free(_z_, TRUE); \
-    _z_ = NULL;               \
+    _z_ = nullptr;            \
   } while (0)
 
 #define GERROR_FREE(_z_) \
   do {                   \
     g_error_free(_z_);   \
-    _z_ = NULL;          \
+    _z_ = nullptr;       \
   } while (0)
 
 #define REGEX_CHK(_tp, _str) \

@@ -84,15 +84,15 @@ static void show_column_markers();
 GeanyPlugin *geany_plugin;
 GeanyData *geany_data;
 
-static GtkWindow *geany_window = NULL;
-static GtkNotebook *geany_sidebar = NULL;
-static GtkNotebook *geany_msgwin = NULL;
-static GtkNotebook *geany_editor = NULL;
-static GtkWidget *geany_hpane = NULL;
-static GtkWidget *geany_menubar = NULL;
+static GtkWindow *geany_window = nullptr;
+static GtkNotebook *geany_sidebar = nullptr;
+static GtkNotebook *geany_msgwin = nullptr;
+static GtkNotebook *geany_editor = nullptr;
+static GtkWidget *geany_hpane = nullptr;
+static GtkWidget *geany_menubar = nullptr;
 
-GtkWidget *g_tweaks_menu = NULL;
-static GeanyDocument *g_current_doc = NULL;
+GtkWidget *g_tweaks_menu = nullptr;
+static GeanyDocument *g_current_doc = nullptr;
 
 static gulong g_handle_set_focus_child_sidebar = 0;
 static gulong g_handle_set_focus_child_msgwin = 0;
@@ -105,7 +105,7 @@ static gulong g_handle_select_page = 0;
 static gulong g_handle_pane_position = 0;
 
 static gulong g_handle_tab_object = 0;
-static GtkWidget *g_tab_object = NULL;
+static GtkWidget *g_tab_object = nullptr;
 
 static clock_t g_lost_focus_clock = 0;
 static clock_t g_gain_focus_clock = 0;
@@ -162,23 +162,24 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(g_tweaks_menu), submenu);
 
   item = gtk_menu_item_new_with_label("Edit Config File");
-  g_signal_connect(item, "activate", G_CALLBACK(on_pref_edit_config), NULL);
+  g_signal_connect(item, "activate", G_CALLBACK(on_pref_edit_config), nullptr);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   item = gtk_menu_item_new_with_label("Reload Config File");
-  g_signal_connect(item, "activate", G_CALLBACK(on_pref_reload_config), NULL);
+  g_signal_connect(item, "activate", G_CALLBACK(on_pref_reload_config),
+                   nullptr);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   item = gtk_menu_item_new_with_label("Open Config Folder");
   g_signal_connect(item, "activate", G_CALLBACK(on_pref_open_config_folder),
-                   NULL);
+                   nullptr);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   item = gtk_separator_menu_item_new();
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   item = gtk_menu_item_new_with_label("Preferences");
-  g_signal_connect(item, "activate", G_CALLBACK(on_menu_preferences), NULL);
+  g_signal_connect(item, "activate", G_CALLBACK(on_menu_preferences), nullptr);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 
   gtk_widget_show_all(g_tweaks_menu);
@@ -191,13 +192,14 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
       geany_plugin, _("Xi/Tweaks"), 2, (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
-      group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, NULL, 0, 0,
-      "xitweaks_switch_focus_editor_sidebar_msgwin",
-      _("Switch focus among editor, sidebar, and message window."), NULL);
+      group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
+      GdkModifierType(0), "xitweaks_switch_focus_editor_sidebar_msgwin",
+      _("Switch focus among editor, sidebar, and message window."), nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, NULL, 0, 0,
+  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, nullptr, 0,
+                       GdkModifierType(0),
                        "xitweaks_toggle_visibility_menubar_",
-                       _("Toggle visibility of the menubar."), NULL);
+                       _("Toggle visibility of the menubar."), nullptr);
 
   // Enable features
   pane_position_update(settings.sidebar_save_size_enabled ||
@@ -213,14 +215,14 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
 
   show_column_markers();
 
-  return TRUE;
+  return true;
 }
 
 static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
   gtk_widget_destroy(g_tweaks_menu);
 
-  sidebar_focus_update(FALSE);
-  pane_position_update(FALSE);
+  sidebar_focus_update(false);
+  pane_position_update(false);
 
   save_settings();
 }
@@ -235,7 +237,7 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
   tooltip = g_strdup("Save the active settings to the config file.");
   btn = gtk_button_new_with_label("Save Config");
   g_signal_connect(btn, "clicked", G_CALLBACK(on_pref_save_config), dialog);
-  gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(box), btn, false, false, 3);
   gtk_widget_set_tooltip_text(btn, tooltip);
   GFREE(tooltip);
 
@@ -244,7 +246,7 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
       "to apply preferences after editing without restarting Geany.");
   btn = gtk_button_new_with_label("Reload Config");
   g_signal_connect(btn, "clicked", G_CALLBACK(on_pref_reload_config), dialog);
-  gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(box), btn, false, false, 3);
   gtk_widget_set_tooltip_text(btn, tooltip);
   GFREE(tooltip);
 
@@ -253,14 +255,14 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
       "file with explanatory comments.");
   btn = gtk_button_new_with_label("Reset Config");
   g_signal_connect(btn, "clicked", G_CALLBACK(on_pref_reset_config), dialog);
-  gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(box), btn, false, false, 3);
   gtk_widget_set_tooltip_text(btn, tooltip);
   GFREE(tooltip);
 
   tooltip = g_strdup("Open the config file in Geany for editing.");
   btn = gtk_button_new_with_label("Edit Config");
   g_signal_connect(btn, "clicked", G_CALLBACK(on_pref_edit_config), dialog);
-  gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(box), btn, false, false, 3);
   gtk_widget_set_tooltip_text(btn, tooltip);
   GFREE(tooltip);
 
@@ -270,7 +272,7 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
   btn = gtk_button_new_with_label("Open Config Folder");
   g_signal_connect(btn, "clicked", G_CALLBACK(on_pref_open_config_folder),
                    dialog);
-  gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 3);
+  gtk_box_pack_start(GTK_BOX(box), btn, false, false, 3);
   gtk_widget_set_tooltip_text(btn, tooltip);
   GFREE(tooltip);
 
@@ -304,7 +306,8 @@ static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
-  char *conf_dn = g_build_filename(geany_data->app->configdir, "plugins", NULL);
+  char *conf_dn =
+      g_build_filename(geany_data->app->configdir, "plugins", nullptr);
 
   char *command;
   command = g_strdup_printf("xdg-open \"%s\"", conf_dn);
@@ -318,12 +321,12 @@ static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
   char *conf_fn = g_build_filename(geany_data->app->configdir, "plugins",
-                                   "xitweaks", "xitweaks.conf", NULL);
-  GeanyDocument *doc = document_open_file(conf_fn, FALSE, NULL, NULL);
-  document_reload_force(doc, NULL);
+                                   "xitweaks", "xitweaks.conf", nullptr);
+  GeanyDocument *doc = document_open_file(conf_fn, false, nullptr, nullptr);
+  document_reload_force(doc, nullptr);
   GFREE(conf_fn);
 
-  if (dialog != NULL) {
+  if (dialog != nullptr) {
     gtk_widget_destroy(GTK_WIDGET(dialog));
   }
 }
@@ -338,8 +341,8 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
 
 static void pane_position_update(gboolean enable) {
   if (enable && !g_handle_pane_position) {
-    g_handle_pane_position = g_signal_connect(GTK_WIDGET(geany_hpane), "draw",
-                                              G_CALLBACK(on_draw_pane), NULL);
+    g_handle_pane_position = g_signal_connect(
+        GTK_WIDGET(geany_hpane), "draw", G_CALLBACK(on_draw_pane), nullptr);
   }
 
   if (!enable && g_handle_pane_position) {
@@ -350,8 +353,8 @@ static void pane_position_update(gboolean enable) {
 static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
   if (!settings.sidebar_save_size_enabled &&
       !settings.sidebar_auto_size_enabled) {
-    pane_position_update(FALSE);
-    return FALSE;
+    pane_position_update(false);
+    return false;
   }
 
   int pos_auto_normal = 0;
@@ -359,7 +362,7 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
 
   if (settings.sidebar_auto_size_enabled) {
     GeanyDocument *doc = document_get_current();
-    if (doc != NULL) {
+    if (doc != nullptr) {
       const char *const str_auto_normal =
           g_strnfill(settings.sidebar_auto_size_normal, '0');
       const char *const str_auto_maximized =
@@ -376,7 +379,7 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
     }
   }
 
-  static gboolean window_maximized_previous = FALSE;
+  static gboolean window_maximized_previous = false;
   const gboolean window_maximized_current =
       gtk_window_is_maximized(geany_window);
 
@@ -417,7 +420,7 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
     window_maximized_previous = window_maximized_current;
   }
 
-  return FALSE;
+  return false;
 }
 
 /* ********************
@@ -428,30 +431,30 @@ static void sidebar_focus_update(gboolean enable) {
   if (enable && !g_handle_switch_page) {
     g_handle_switch_page =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "switch-page",
-                         G_CALLBACK(on_switch_page), NULL);
+                         G_CALLBACK(on_switch_page), nullptr);
     g_handle_select_page =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "select-page",
-                         G_CALLBACK(on_select_page), NULL);
+                         G_CALLBACK(on_select_page), nullptr);
 
     g_handle_set_focus_child_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_sidebar), NULL);
+                         G_CALLBACK(on_set_focus_child_sidebar), nullptr);
     g_handle_set_focus_child_msgwin =
         g_signal_connect(GTK_WIDGET(geany_msgwin), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_msgwin), NULL);
+                         G_CALLBACK(on_set_focus_child_msgwin), nullptr);
     g_handle_set_focus_child_editor =
         g_signal_connect(GTK_WIDGET(geany_editor), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_editor), NULL);
+                         G_CALLBACK(on_set_focus_child_editor), nullptr);
 
     g_handle_grab_focus_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-focus",
-                         G_CALLBACK(on_grab_focus_sidebar), NULL);
+                         G_CALLBACK(on_grab_focus_sidebar), nullptr);
     g_handle_grab_focus_msgwin =
         g_signal_connect(GTK_WIDGET(geany_msgwin), "grab-focus",
-                         G_CALLBACK(on_grab_focus_msgwin), NULL);
+                         G_CALLBACK(on_grab_focus_msgwin), nullptr);
     g_handle_grab_focus_editor =
         g_signal_connect(GTK_WIDGET(geany_editor), "grab-focus",
-                         G_CALLBACK(on_grab_focus_editor), NULL);
+                         G_CALLBACK(on_grab_focus_editor), nullptr);
   }
 
   if (!enable && g_handle_switch_page) {
@@ -478,7 +481,7 @@ static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
   // msgwin_status_add("switch page");
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
     // prevent race condition
-    g_timeout_add(25, G_SOURCE_FUNC(sidebar_focus_highlight), (gpointer)TRUE);
+    g_timeout_add(25, G_SOURCE_FUNC(sidebar_focus_highlight), (gpointer) true);
   }
 }
 
@@ -487,60 +490,60 @@ static gboolean on_select_page(GtkNotebook *self, gboolean object,
   // msgwin_status_add("select page");
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
     // prevent race condition
-    sidebar_focus_highlight(TRUE);
+    sidebar_focus_highlight(true);
   }
-  return FALSE;
+  return false;
 }
 
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data) {
   // msgwin_status_add("grab focus sidebar");
-  sidebar_focus_highlight(TRUE);
+  sidebar_focus_highlight(true);
 }
 
 static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data) {
   // msgwin_status_add("grab focus msgwin");
-  sidebar_focus_highlight(FALSE);
+  sidebar_focus_highlight(false);
 }
 
 static void on_grab_focus_editor(GtkWidget *self, gpointer user_data) {
   // msgwin_status_add("grab focus editor");
-  sidebar_focus_highlight(FALSE);
+  sidebar_focus_highlight(false);
 }
 
 static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
                                        gpointer user_data) {
   // msgwin_status_add("set focus child sidebar");
-  sidebar_focus_highlight(TRUE);
+  sidebar_focus_highlight(true);
 }
 
 static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
   // msgwin_status_add("set focus child msgwin");
-  sidebar_focus_highlight(FALSE);
+  sidebar_focus_highlight(false);
 }
 
 static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
   // msgwin_status_add("set focus child editor");
-  sidebar_focus_highlight(FALSE);
+  sidebar_focus_highlight(false);
 }
 
 static gboolean sidebar_focus_highlight(gboolean highlight) {
-  static gboolean has_focus = FALSE;
+  static gboolean has_focus = false;
 
   if (!has_focus && !highlight) {
-    return FALSE;
+    return false;
   }
 
   if (!settings.sidebar_focus_enabled) {
-    sidebar_focus_update(FALSE);
-    highlight = FALSE;
+    sidebar_focus_update(false);
+    highlight = false;
   }
   if (highlight && clock() - g_lost_focus_clock < 100) {
-    return FALSE;
+    return false;
   }
   if (!highlight && clock() - g_gain_focus_clock < 100) {
-    return FALSE;
+    return false;
   }
 
   gint num_pages = gtk_notebook_get_n_pages(geany_sidebar);
@@ -556,14 +559,14 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
     if (highlight && i == cur_page) {
       if (settings.sidebar_focus_bold) {
-        gchar *tmp = g_strjoin(NULL, "<b>", text, "</b>", NULL);
+        gchar *tmp = g_strjoin(nullptr, "<b>", text, "</b>", nullptr);
         g_free(text);
         text = tmp;
       }
       if (settings.sidebar_focus_color) {
         gchar *tmp =
-            g_strjoin(NULL, "<span color='", settings.sidebar_focus_color, "'>",
-                      text, "</span>", NULL);
+            g_strjoin(nullptr, "<span color='", settings.sidebar_focus_color,
+                      "'>", text, "</span>", nullptr);
         g_free(text);
         text = tmp;
       }
@@ -580,7 +583,7 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
   } else {
     g_lost_focus_clock = clock();
   }
-  return FALSE;
+  return false;
 }
 
 /* ********************
@@ -589,7 +592,7 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
 static void on_switch_focus_editor_sidebar_msgwin() {
   GeanyDocument *doc = document_get_current();
-  if (doc != NULL) {
+  if (doc != nullptr) {
     gint cur_page = gtk_notebook_get_current_page(geany_sidebar);
     GtkWidget *page = gtk_notebook_get_nth_page(geany_sidebar, cur_page);
     page = find_focus_widget(page);
@@ -624,13 +627,13 @@ static bool on_key_binding(int key_id) {
       on_toggle_visibility_menubar();
       break;
     default:
-      return FALSE;
+      return false;
   }
-  return TRUE;
+  return true;
 }
 
 static GtkWidget *find_focus_widget(GtkWidget *widget) {
-  GtkWidget *focus = NULL;
+  GtkWidget *focus = nullptr;
 
   // optimized simple case
   if (GTK_IS_BIN(widget)) {
@@ -640,7 +643,7 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
     GList *node;
 
     for (node = children; node && !focus; node = node->next)
-      focus = find_focus_widget(node->data);
+      focus = find_focus_widget(GTK_WIDGET(node->data));
     g_list_free(children);
   }
 
@@ -672,8 +675,8 @@ static void show_column_markers() {
     scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
     scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
 
-    if (settings.column_marker_columns != NULL &&
-        settings.column_marker_colors != NULL) {
+    if (settings.column_marker_columns != nullptr &&
+        settings.column_marker_colors != nullptr) {
       for (int i = 0; i < settings.column_marker_count; i++) {
         scintilla_send_message(doc->editor->sci, SCI_MULTIEDGEADDLINE,
                                settings.column_marker_columns[i],

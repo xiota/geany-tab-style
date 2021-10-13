@@ -58,8 +58,8 @@ G_END_DECLS
 // Macros to make loading settings easier
 #define PLUGIN_GROUP "tweaks"
 
-#define HAS_KEY(key) g_key_file_has_key(kf, PLUGIN_GROUP, (key), NULL)
-#define GET_KEY(T, key) g_key_file_get_##T(kf, PLUGIN_GROUP, (key), NULL)
+#define HAS_KEY(key) g_key_file_has_key(kf, PLUGIN_GROUP, (key), nullptr)
+#define GET_KEY(T, key) g_key_file_get_##T(kf, PLUGIN_GROUP, (key), nullptr)
 #define SET_KEY(T, key, _val) \
   g_key_file_set_##T(kf, PLUGIN_GROUP, (key), (_val))
 
@@ -120,7 +120,7 @@ G_END_DECLS
 #define GKEY_FILE_FREE(_z_) \
   do {                      \
     g_key_file_free(_z_);   \
-    _z_ = NULL;             \
+    _z_ = nullptr;          \
   } while (0)
 
 #define ADD_COLUMN_MARKER(idx, col, bgr)           \

@@ -27,7 +27,7 @@ struct TweakSettings settings;
 
 void open_settings() {
   char *conf_fn = g_build_filename(geany_data->app->configdir, "plugins",
-                                   "xitweaks", "xitweaks.conf", NULL);
+                                   "xitweaks", "xitweaks.conf", nullptr);
   char *conf_dn = g_path_get_dirname(conf_fn);
   g_mkdir_with_parents(conf_dn, 0755);
 
@@ -39,8 +39,9 @@ void open_settings() {
   }
 
   g_key_file_load_from_file(
-      kf, conf_fn, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS,
-      NULL);
+      kf, conf_fn,
+      GKeyFileFlags(G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS),
+      nullptr);
 
   init_settings();
   load_settings(kf);
@@ -52,21 +53,21 @@ void open_settings() {
 
 void save_default_settings() {
   char *conf_fn = g_build_filename(geany_data->app->configdir, "plugins",
-                                   "xitweaks", "xitweaks.conf", NULL);
+                                   "xitweaks", "xitweaks.conf", nullptr);
   char *conf_dn = g_path_get_dirname(conf_fn);
   g_mkdir_with_parents(conf_dn, 0755);
 
   // delete if file exists
   GFile *file = g_file_new_for_path(conf_fn);
-  if (!g_file_trash(file, NULL, NULL)) {
-    g_file_delete(file, NULL, NULL);
+  if (!g_file_trash(file, nullptr, nullptr)) {
+    g_file_delete(file, nullptr, nullptr);
   }
 
   // copy default config
-  char *contents = NULL;
+  char *contents = nullptr;
   size_t length = 0;
-  if (g_file_get_contents(TWEAKS_CONFIG, &contents, &length, NULL)) {
-    g_file_set_contents(conf_fn, contents, length, NULL);
+  if (g_file_get_contents(TWEAKS_CONFIG, &contents, &length, nullptr)) {
+    g_file_set_contents(conf_fn, contents, length, nullptr);
     GFREE(contents);
   }
 
@@ -79,29 +80,34 @@ void save_settings() {
   char *contents;
   size_t length = 0;
   char *fn = g_build_filename(geany_data->app->configdir, "plugins", "xitweaks",
-                              "xitweaks.conf", NULL);
+                              "xitweaks.conf", nullptr);
 
   // Load old contents in case user changed file outside of GUI
   g_key_file_load_from_file(
-      kf, fn, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+      kf, fn,
+      GKeyFileFlags(G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS),
+      nullptr);
 
   // Update settings with new contents
   SET_KEY(boolean, "sidebar_focus_enabled", settings.sidebar_focus_enabled);
   SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
   SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
-  SET_KEY(boolean, "sidebar_save_size_enabled", settings.sidebar_save_size_enabled);
-  SET_KEY(boolean, "sidebar_save_size_update", settings.sidebar_save_size_update);
-  SET_KEY(integer, "sidebar_save_size_normal", settings.sidebar_save_size_normal);
+  SET_KEY(boolean, "sidebar_save_size_enabled",
+          settings.sidebar_save_size_enabled);
+  SET_KEY(boolean, "sidebar_save_size_update",
+          settings.sidebar_save_size_update);
+  SET_KEY(integer, "sidebar_save_size_normal",
+          settings.sidebar_save_size_normal);
   SET_KEY(integer, "sidebar_save_size_maximized",
           settings.sidebar_save_size_maximized);
 
-  SET_KEY(boolean, "sidebar_auto_size_enabled", settings.sidebar_auto_size_enabled);
-  SET_KEY(integer, "sidebar_auto_size_normal", settings.sidebar_auto_size_normal);
-  SET_KEY(integer, "sidebar_auto_size_maximized", settings.sidebar_auto_size_maximized);
-
-
-
+  SET_KEY(boolean, "sidebar_auto_size_enabled",
+          settings.sidebar_auto_size_enabled);
+  SET_KEY(integer, "sidebar_auto_size_normal",
+          settings.sidebar_auto_size_normal);
+  SET_KEY(integer, "sidebar_auto_size_maximized",
+          settings.sidebar_auto_size_maximized);
 
   SET_KEY(boolean, "hide_menubar", settings.hide_menubar);
 
@@ -116,9 +122,9 @@ void save_settings() {
                               settings.column_marker_count);
 
   // Store back on disk
-  contents = g_key_file_to_data(kf, &length, NULL);
+  contents = g_key_file_to_data(kf, &length, nullptr);
   if (contents) {
-    g_file_set_contents(fn, contents, length, NULL);
+    g_file_set_contents(fn, contents, length, nullptr);
     GFREE(contents);
   }
 
@@ -131,25 +137,25 @@ void load_settings(GKeyFile *kf) {
     return;
   }
 
-  LOAD_KEY_BOOLEAN(sidebar_focus_enabled, FALSE);
-  LOAD_KEY_BOOLEAN(sidebar_focus_bold, FALSE);
+  LOAD_KEY_BOOLEAN(sidebar_focus_enabled, false);
+  LOAD_KEY_BOOLEAN(sidebar_focus_bold, false);
   LOAD_KEY_STRING(sidebar_focus_color, "green");
 
-  LOAD_KEY_BOOLEAN(sidebar_save_size_enabled, TRUE);
-  LOAD_KEY_BOOLEAN(sidebar_save_size_update, TRUE);
+  LOAD_KEY_BOOLEAN(sidebar_save_size_enabled, true);
+  LOAD_KEY_BOOLEAN(sidebar_save_size_update, true);
   LOAD_KEY_INTEGER(sidebar_save_size_normal, 0, 0);
   LOAD_KEY_INTEGER(sidebar_save_size_maximized, 0, 0);
 
-  LOAD_KEY_BOOLEAN(sidebar_auto_size_enabled, FALSE);
+  LOAD_KEY_BOOLEAN(sidebar_auto_size_enabled, false);
   LOAD_KEY_INTEGER(sidebar_auto_size_normal, 76, 0);
   LOAD_KEY_INTEGER(sidebar_auto_size_maximized, 100, 0);
 
-  LOAD_KEY_BOOLEAN(hide_menubar, FALSE);
+  LOAD_KEY_BOOLEAN(hide_menubar, false);
 
-  LOAD_KEY_BOOLEAN(column_marker_enable, TRUE);
+  LOAD_KEY_BOOLEAN(column_marker_enable, true);
 
-  if (settings.column_marker_columns != NULL ||
-      settings.column_marker_colors != NULL) {
+  if (settings.column_marker_columns != nullptr ||
+      settings.column_marker_colors != nullptr) {
     settings.column_marker_count = 0;
     GFREE(settings.column_marker_columns);
     GFREE(settings.column_marker_colors);
@@ -159,14 +165,14 @@ void load_settings(GKeyFile *kf) {
   gsize len_b = 0;
 
   int *tmp_columns = g_key_file_get_integer_list(
-      kf, PLUGIN_GROUP, "column_marker_columns", &len_a, NULL);
+      kf, PLUGIN_GROUP, "column_marker_columns", &len_a, nullptr);
 
   int *tmp_colors = g_key_file_get_integer_list(
-      kf, PLUGIN_GROUP, "column_marker_colors", &len_b, NULL);
+      kf, PLUGIN_GROUP, "column_marker_colors", &len_b, nullptr);
 
   int tmp_count = len_a < len_b ? len_a : len_b;
 
-  if (tmp_count > 0 || tmp_columns != NULL || tmp_colors != NULL) {
+  if (tmp_count > 0 || tmp_columns != nullptr || tmp_colors != nullptr) {
     GFREE(settings.column_marker_columns);
     GFREE(settings.column_marker_colors);
 
@@ -180,24 +186,24 @@ void load_settings(GKeyFile *kf) {
 }
 
 void init_settings() {
-  settings.sidebar_focus_enabled = FALSE;
-  settings.sidebar_focus_bold = FALSE;
+  settings.sidebar_focus_enabled = false;
+  settings.sidebar_focus_bold = false;
   settings.sidebar_focus_color = g_strdup("green");
 
-  settings.sidebar_save_size_enabled = TRUE;
-  settings.sidebar_save_size_update = TRUE;
+  settings.sidebar_save_size_enabled = true;
+  settings.sidebar_save_size_update = true;
   settings.sidebar_save_size_normal = 0;
   settings.sidebar_save_size_maximized = 0;
 
-  settings.sidebar_auto_size_enabled = FALSE;
+  settings.sidebar_auto_size_enabled = false;
   settings.sidebar_auto_size_normal = 76;
   settings.sidebar_auto_size_maximized = 100;
 
-  settings.hide_menubar = FALSE;
+  settings.hide_menubar = false;
 
   settings.column_marker_count = 13;
-  settings.column_marker_columns = g_malloc(13 * sizeof(int));
-  settings.column_marker_colors = g_malloc(13 * sizeof(int));
+  settings.column_marker_columns = (int *)g_malloc(13 * sizeof(int));
+  settings.column_marker_colors = (int *)g_malloc(13 * sizeof(int));
 
   // Colors are in BGR order
   ADD_COLUMN_MARKER(0, 60, 0xe5e5e5);
