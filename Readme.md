@@ -10,6 +10,7 @@ This plugin provides miscellaneous tweaks for Geany that don't fit anywhere else
 * Save different sidebar sizes for different window states.
 * Auto size the sidebar according to window state.
 * Quick access to the Geany user config folder.
+* Switch `.h` files to C++ if corresponding `.cc` file found
 
 ## Installation
 
@@ -31,4 +32,4 @@ This plugin depends on the following libraries and programs:
 
 ## License
 
-The Preview plugin for Geany is licensed under the [GPLv2](COPYING) or later.
+The Preview plugin for Geany is licensed under the [GPLv3](License.md) or later.

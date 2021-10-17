@@ -24,6 +24,8 @@
 
 #include <time.h>
 
+#include <string>
+
 #include "plugin.h"
 #include "prefs.h"
 
@@ -76,7 +78,7 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
 
 // Other functions
-static void show_column_markers();
+static void show_column_markers(GeanyDocument *doc = nullptr);
 
 /* ********************
  * Globals
@@ -126,6 +128,7 @@ void plugin_init(GeanyData *data) {
   GEANY_PSC("document-new", on_document_signal);
   GEANY_PSC("document-open", on_document_signal);
   GEANY_PSC("document-reload", on_document_signal);
+  GEANY_PSC("document-filetype-set", on_document_signal);
 
   tweaks_init(geany_plugin, geany_data);
 }
@@ -662,15 +665,27 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {
-  show_column_markers();
+  if (DOC_VALID(doc) && doc->file_type->id == GEANY_FILETYPES_C) {
+    std::string fn{DOC_FILENAME(doc)};
+    if (fn[fn.length() - 2] == '.' && fn[fn.length() - 1] == 'h') {
+      std::string cc_fn = fn.substr(0, fn.length() - 2);
+      cc_fn += ".cc";
+      if (g_file_test(cc_fn.c_str(), G_FILE_TEST_EXISTS)) {
+        document_set_filetype(doc, filetypes[GEANY_FILETYPES_CPP]);
+      }
+    }
+  }
+  show_column_markers(doc);
 }
 
 /* ********************
  * Other Functions
  */
 
-static void show_column_markers() {
-  GeanyDocument *doc = document_get_current();
+static void show_column_markers(GeanyDocument *doc) {
+  if (!doc) {
+    doc = document_get_current();
+  }
   if (settings.column_marker_enable && DOC_VALID(doc)) {
     scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
     scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
