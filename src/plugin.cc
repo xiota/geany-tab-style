@@ -76,6 +76,8 @@ static GtkWidget *find_focus_widget(GtkWidget *widget);
 // Geany Signal Callbacks
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
+static void on_project_signal(GObject *obj, GKeyFile *config,
+                              gpointer user_data);
 
 // Other functions
 static void show_column_markers(GeanyDocument *doc = nullptr);
@@ -129,6 +131,9 @@ void plugin_init(GeanyData *data) {
   GEANY_PSC("document-open", on_document_signal);
   GEANY_PSC("document-reload", on_document_signal);
   GEANY_PSC("document-filetype-set", on_document_signal);
+  GEANY_PSC("project-open", on_project_signal);
+  GEANY_PSC("project-close", on_project_signal);
+  GEANY_PSC("project-save", on_project_signal);
 
   tweaks_init(geany_plugin, geany_data);
 }
@@ -665,7 +670,19 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {
-  if (DOC_VALID(doc) && doc->file_type->id == GEANY_FILETYPES_C) {
+  show_column_markers(doc);
+}
+
+static void on_document_set_filetype(GObject *obj, GeanyDocument *doc,
+                                     gpointer user_data) {
+  if (!DOC_VALID(doc)) {
+    doc = document_get_current();
+  }
+  g_return_if_fail(DOC_VALID(doc));
+
+  // Set .h header to C++ if corresponding .cc file found
+  // TODO: Is there any need to do this for .cxx .cpp etc?
+  if (doc->file_type->id == GEANY_FILETYPES_C) {
     std::string fn{DOC_FILENAME(doc)};
     if (fn[fn.length() - 2] == '.' && fn[fn.length() - 1] == 'h') {
       std::string cc_fn = fn.substr(0, fn.length() - 2);
@@ -675,7 +692,11 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
       }
     }
   }
-  show_column_markers(doc);
+}
+
+static void on_project_signal(GObject *obj, GKeyFile *config,
+                              gpointer user_data) {
+  show_column_markers(nullptr);
 }
 
 /* ********************
@@ -683,10 +704,12 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
  */
 
 static void show_column_markers(GeanyDocument *doc) {
-  if (!doc) {
+  if (!DOC_VALID(doc)) {
     doc = document_get_current();
   }
-  if (settings.column_marker_enable && DOC_VALID(doc)) {
+  g_return_if_fail(DOC_VALID(doc));
+
+  if (settings.column_marker_enable) {
     scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
     scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
 
