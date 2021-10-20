@@ -21,4 +21,6 @@ xi_tweaks_la_SOURCES = \
 	src/plugin.cc \
 	src/plugin.h \
 	src/prefs.cc \
-	src/prefs.h
+	src/prefs.h \
+	src/auxiliary.cc \
+	src/auxiliary.h

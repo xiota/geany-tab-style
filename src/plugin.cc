@@ -24,8 +24,7 @@
 
 #include <time.h>
 
-#include <string>
-
+#include "auxiliary.h"
 #include "plugin.h"
 #include "prefs.h"
 
@@ -314,25 +313,21 @@ static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
-  char *conf_dn =
-      g_build_filename(geany_data->app->configdir, "plugins", nullptr);
+  std::string conf_dn = cstr_assign_free(
+      g_build_filename(geany_data->app->configdir, "plugins", nullptr));
 
-  char *command;
-  command = g_strdup_printf("xdg-open \"%s\"", conf_dn);
-  if (system(command)) {
-    // ignore;
-  }
-  GFREE(conf_dn);
-  GFREE(command);
+  std::string command = R"(xdg-open ")" + conf_dn + R"(")";
+  (void)!system(command.c_str());
 }
 
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   open_settings();
-  char *conf_fn = g_build_filename(geany_data->app->configdir, "plugins",
-                                   "xitweaks", "xitweaks.conf", nullptr);
-  GeanyDocument *doc = document_open_file(conf_fn, false, nullptr, nullptr);
+  std::string conf_fn =
+      cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
+                                        "xitweaks", "xitweaks.conf", nullptr));
+  GeanyDocument *doc =
+      document_open_file(conf_fn.c_str(), false, nullptr, nullptr);
   document_reload_force(doc, nullptr);
-  GFREE(conf_fn);
 
   if (dialog != nullptr) {
     gtk_widget_destroy(GTK_WIDGET(dialog));
@@ -371,17 +366,16 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
   if (settings.sidebar_auto_size_enabled) {
     GeanyDocument *doc = document_get_current();
     if (doc != nullptr) {
-      const char *const str_auto_normal =
-          g_strnfill(settings.sidebar_auto_size_normal, '0');
-      const char *const str_auto_maximized =
-          g_strnfill(settings.sidebar_auto_size_maximized, '0');
+      std::string str_auto_normal(settings.sidebar_auto_size_normal, '0');
+      std::string str_auto_maximized(settings.sidebar_auto_size_maximized, '0');
 
-      const int pos_origin = (int)scintilla_send_message(
+      int pos_origin = (int)scintilla_send_message(
           doc->editor->sci, SCI_POINTXFROMPOSITION, 0, 1);
-      const int pos_normal = (int)scintilla_send_message(
-          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_normal);
-      const int pos_maximized = (int)scintilla_send_message(
-          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_maximized);
+      int pos_normal = (int)scintilla_send_message(
+          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_normal.c_str());
+      int pos_maximized =
+          (int)scintilla_send_message(doc->editor->sci, SCI_TEXTWIDTH, 0,
+                                      (gulong)str_auto_maximized.c_str());
       pos_auto_normal = pos_origin + pos_normal;
       pos_auto_maximized = pos_origin + pos_maximized;
     }
@@ -497,7 +491,6 @@ static gboolean on_select_page(GtkNotebook *self, gboolean object,
                                gpointer user_data) {
   // msgwin_status_add("select page");
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
-    // prevent race condition
     sidebar_focus_highlight(true);
   }
   return false;
@@ -560,27 +553,22 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
   for (int i = 0; i < num_pages; i++) {
     GtkWidget *page = gtk_notebook_get_nth_page(geany_sidebar, i);
-    gchar *text =
-        g_strdup(gtk_notebook_get_tab_label_text(geany_sidebar, page));
+    std::string strText = gtk_notebook_get_tab_label_text(geany_sidebar, page);
 
     GtkWidget *label = gtk_notebook_get_tab_label(geany_sidebar, page);
 
     if (highlight && i == cur_page) {
       if (settings.sidebar_focus_bold) {
-        gchar *tmp = g_strjoin(nullptr, "<b>", text, "</b>", nullptr);
-        g_free(text);
-        text = tmp;
+        strText = "<b>" + strText + "</b>";
       }
       if (settings.sidebar_focus_color) {
-        gchar *tmp =
-            g_strjoin(nullptr, "<span color='", settings.sidebar_focus_color,
-                      "'>", text, "</span>", nullptr);
-        g_free(text);
-        text = tmp;
+        strText = R"(<span color=")" +
+                  std::string(settings.sidebar_focus_color) + R"(">)" +
+                  strText + "</span>";
       }
     }
 
-    gtk_label_set_markup(GTK_LABEL(label), text);
+    gtk_label_set_markup(GTK_LABEL(label), strText.c_str());
   }
 
   sidebar_focus_update(settings.sidebar_focus_enabled);
