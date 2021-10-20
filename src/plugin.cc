@@ -79,7 +79,7 @@ static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data);
 
 // Other functions
-static void show_column_markers(GeanyDocument *doc = nullptr);
+static gboolean show_column_markers(gpointer user_data = nullptr);
 
 /* ********************
  * Globals
@@ -106,6 +106,7 @@ static gulong g_handle_grab_focus_editor = 0;
 static gulong g_handle_switch_page = 0;
 static gulong g_handle_select_page = 0;
 static gulong g_handle_pane_position = 0;
+static gulong g_handle_signal_timeout = 0;
 
 static gulong g_handle_tab_object = 0;
 static GtkWidget *g_tab_object = nullptr;
@@ -220,7 +221,9 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
     gtk_widget_show(geany_menubar);
   }
 
-  show_column_markers();
+  if (g_handle_signal_timeout == 0) {
+    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  }
 
   return true;
 }
@@ -658,7 +661,9 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {
-  show_column_markers(doc);
+  if (g_handle_signal_timeout == 0) {
+    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  }
 }
 
 static void on_document_set_filetype(GObject *obj, GeanyDocument *doc,
@@ -684,18 +689,19 @@ static void on_document_set_filetype(GObject *obj, GeanyDocument *doc,
 
 static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data) {
-  show_column_markers(nullptr);
+  if (g_handle_signal_timeout == 0) {
+    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  }
 }
 
 /* ********************
  * Other Functions
  */
 
-static void show_column_markers(GeanyDocument *doc) {
-  if (!DOC_VALID(doc)) {
-    doc = document_get_current();
-  }
-  g_return_if_fail(DOC_VALID(doc));
+static gboolean show_column_markers(gpointer user_data) {
+  g_handle_signal_timeout = 0;
+  GeanyDocument *doc = document_get_current();
+  g_return_val_if_fail(DOC_VALID(doc), false);
 
   if (settings.column_marker_enable) {
     scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
@@ -710,4 +716,5 @@ static void show_column_markers(GeanyDocument *doc) {
       }
     }
   }
+  return false;
 }
