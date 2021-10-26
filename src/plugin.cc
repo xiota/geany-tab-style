@@ -77,6 +77,8 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
 static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data);
+static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
+                             SCNotification *notif, gpointer user_data);
 
 // Other functions
 static gboolean show_column_markers(gpointer user_data = nullptr);
@@ -126,11 +128,11 @@ PLUGIN_SET_INFO(
 
 void plugin_init(GeanyData *data) {
   GEANY_PSC("geany-startup-complete", on_document_signal);
+  GEANY_PSC("editor-notify", on_editor_notify);
   GEANY_PSC("document-activate", on_document_signal);
   GEANY_PSC("document-new", on_document_signal);
   GEANY_PSC("document-open", on_document_signal);
   GEANY_PSC("document-reload", on_document_signal);
-  GEANY_PSC("document-filetype-set", on_document_signal);
   GEANY_PSC("project-open", on_project_signal);
   GEANY_PSC("project-close", on_project_signal);
   GEANY_PSC("project-save", on_project_signal);
@@ -666,32 +668,29 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
   }
 }
 
-static void on_document_set_filetype(GObject *obj, GeanyDocument *doc,
-                                     gpointer user_data) {
-  if (!DOC_VALID(doc)) {
-    doc = document_get_current();
-  }
-  g_return_if_fail(DOC_VALID(doc));
-
-  // Set .h header to C++ if corresponding .cc file found
-  // TODO: Is there any need to do this for .cxx .cpp etc?
-  if (doc->file_type->id == GEANY_FILETYPES_C) {
-    std::string fn{DOC_FILENAME(doc)};
-    if (fn[fn.length() - 2] == '.' && fn[fn.length() - 1] == 'h') {
-      std::string cc_fn = fn.substr(0, fn.length() - 2);
-      cc_fn += ".cc";
-      if (g_file_test(cc_fn.c_str(), G_FILE_TEST_EXISTS)) {
-        document_set_filetype(doc, filetypes[GEANY_FILETYPES_CPP]);
-      }
-    }
-  }
-}
-
 static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data) {
   if (g_handle_signal_timeout == 0) {
     g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
   }
+}
+
+static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
+                             SCNotification *notif, gpointer user_data) {
+  switch (notif->nmhdr.code) {
+    case SCEN_KILLFOCUS:
+      g_timeout_add(50, G_SOURCE_FUNC(sidebar_focus_highlight),
+                    (gpointer) true);
+      break;
+    case SCN_UPDATEUI:
+    case SCEN_CHANGE:
+    case SCEN_SETFOCUS:
+      g_timeout_add(50, G_SOURCE_FUNC(sidebar_focus_highlight),
+                    (gpointer) false);
+    default:
+      break;
+  }
+  return false;
 }
 
 /* ********************
