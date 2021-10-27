@@ -554,7 +554,7 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
   gint num_pages = gtk_notebook_get_n_pages(geany_sidebar);
   gint cur_page = gtk_notebook_get_current_page(geany_sidebar);
-  GtkWidget *page = gtk_notebook_get_nth_page(geany_sidebar, cur_page);
+  GtkWidget *page = nullptr;
 
   for (int i = 0; i < num_pages; i++) {
     GtkWidget *page = gtk_notebook_get_nth_page(geany_sidebar, i);
