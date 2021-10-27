@@ -69,8 +69,21 @@ enum TweakShortcuts {
     _z_ = nullptr;       \
   } while (0)
 
-#define REGEX_CHK(_tp, _str) \
-  g_regex_match_simple((_tp), (_str), G_REGEX_CASELESS, 0)
+#ifndef G_SOURCE_FUNC
+#define G_SOURCE_FUNC(f) ((GSourceFunc)(void (*)(void))(f))
+#endif  // G_SOURCE_FUNC
+
+#ifndef g_clear_signal_handler
+#include "gobject/gsignal.h"
+// g_clear_signal_handler was added in glib 2.62
+#define g_clear_signal_handler(handler, instance)      \
+  do {                                                 \
+    if (handler != nullptr && *handler != 0) {         \
+      g_signal_handler_disconnect(instance, *handler); \
+      *handler = 0;                                    \
+    }                                                  \
+  } while (0)
+#endif  // g_clear_signal_handler
 
 G_END_DECLS
 
