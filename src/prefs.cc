@@ -87,8 +87,6 @@ void save_settings() {
 
   // Update settings with new contents
   SET_KEY(boolean, "sidebar_focus_enabled", settings.sidebar_focus_enabled);
-  SET_KEY(boolean, "sidebar_focus_bold", settings.sidebar_focus_bold);
-  SET_KEY(string, "sidebar_focus_color", settings.sidebar_focus_color);
 
   SET_KEY(boolean, "sidebar_save_size_enabled",
           settings.sidebar_save_size_enabled);
@@ -134,8 +132,6 @@ void load_settings(GKeyFile *kf) {
   }
 
   LOAD_KEY_BOOLEAN(sidebar_focus_enabled, false);
-  LOAD_KEY_BOOLEAN(sidebar_focus_bold, false);
-  LOAD_KEY_STRING(sidebar_focus_color, "green");
 
   LOAD_KEY_BOOLEAN(sidebar_save_size_enabled, true);
   LOAD_KEY_BOOLEAN(sidebar_save_size_update, true);
@@ -183,8 +179,6 @@ void load_settings(GKeyFile *kf) {
 
 void init_settings() {
   settings.sidebar_focus_enabled = false;
-  settings.sidebar_focus_bold = false;
-  settings.sidebar_focus_color = g_strdup("green");
 
   settings.sidebar_save_size_enabled = true;
   settings.sidebar_save_size_update = true;

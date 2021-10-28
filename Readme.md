@@ -6,7 +6,7 @@ This plugin provides miscellaneous tweaks for Geany that don't fit anywhere else
 
 * Show multiple column markers in the editor.
 * Set a keybinding to switch among Editor, Sidebar, and Message Window.
-* Highlight sidebar tabs that have keyboard focus.
+* Highlight sidebar tabs that have focus.
 * Save different sidebar sizes for different window states.
 * Auto size the sidebar according to window state.
 * Quick access to the Geany user config folder.

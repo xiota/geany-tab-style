@@ -162,6 +162,8 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_hpane = ui_lookup_widget(GTK_WIDGET(geany_window), "hpaned1");
   geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
+  gtk_widget_set_name(GTK_WIDGET(geany_sidebar), "geany-xitweaks-sidebar");
+
   // set up menu
   GtkWidget *item;
 
@@ -558,22 +560,13 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
   for (int i = 0; i < num_pages; i++) {
     GtkWidget *page = gtk_notebook_get_nth_page(geany_sidebar, i);
-    std::string strText = gtk_notebook_get_tab_label_text(geany_sidebar, page);
-
     GtkWidget *label = gtk_notebook_get_tab_label(geany_sidebar, page);
 
     if (highlight && i == cur_page) {
-      if (settings.sidebar_focus_bold) {
-        strText = "<b>" + strText + "</b>";
-      }
-      if (settings.sidebar_focus_color) {
-        strText = R"(<span color=")" +
-                  std::string(settings.sidebar_focus_color) + R"(">)" +
-                  strText + "</span>";
-      }
+      gtk_widget_set_name(label, "geany-xitweaks-sidebar-tab-focus");
+    } else {
+      gtk_widget_set_name(label, nullptr);
     }
-
-    gtk_label_set_markup(GTK_LABEL(label), strText.c_str());
   }
 
   sidebar_focus_update(settings.sidebar_focus_enabled);

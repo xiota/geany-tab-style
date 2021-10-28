@@ -27,8 +27,6 @@ G_BEGIN_DECLS
 
 struct TweakSettings {
   gboolean sidebar_focus_enabled;
-  gboolean sidebar_focus_bold;
-  gchar *sidebar_focus_color;
 
   gboolean sidebar_save_size_enabled;
   gboolean sidebar_save_size_update;
