@@ -47,19 +47,18 @@ static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
                            gpointer user_data);
 static gboolean on_select_page(GtkNotebook *self, gboolean object,
                                gpointer user_data);
+static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data);
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
 static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
-static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
 static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
                                        gpointer user_data);
 static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data);
-static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
-                                      gpointer user_data);
 static gboolean sidebar_focus_highlight(gboolean highlight);
 
 // Preferences Callbacks
-static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog);
+static void on_pref_reload_config(GtkWidget *self = nullptr,
+                                  GtkWidget *dialog = nullptr);
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog);
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog);
@@ -73,6 +72,8 @@ static bool on_key_binding(int key_id);
 static GtkWidget *find_focus_widget(GtkWidget *widget);
 
 // Geany Signal Callbacks
+static void on_startup_signal(GObject *obj, GeanyDocument *doc,
+                              gpointer user_data);
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data);
 static void on_project_signal(GObject *obj, GKeyFile *config,
@@ -99,19 +100,15 @@ static GtkWidget *geany_menubar = nullptr;
 GtkWidget *g_tweaks_menu = nullptr;
 static GeanyDocument *g_current_doc = nullptr;
 
+static gulong g_handle_grab_notify_sidebar = 0;
 static gulong g_handle_set_focus_child_sidebar = 0;
 static gulong g_handle_set_focus_child_msgwin = 0;
-static gulong g_handle_set_focus_child_editor = 0;
 static gulong g_handle_grab_focus_sidebar = 0;
 static gulong g_handle_grab_focus_msgwin = 0;
-static gulong g_handle_grab_focus_editor = 0;
 static gulong g_handle_switch_page = 0;
 static gulong g_handle_select_page = 0;
 static gulong g_handle_pane_position = 0;
 static gulong g_handle_signal_timeout = 0;
-
-static gulong g_handle_tab_object = 0;
-static GtkWidget *g_tab_object = nullptr;
 
 static clock_t g_lost_focus_clock = 0;
 static clock_t g_gain_focus_clock = 0;
@@ -152,8 +149,6 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_plugin = plugin;
   geany_data = plugin->geany_data;
 
-  open_settings();
-
   // geany widgets for later use
   geany_window = GTK_WINDOW(geany->main_widgets->window);
   geany_sidebar = GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook);
@@ -163,6 +158,8 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
   gtk_widget_set_name(GTK_WIDGET(geany_sidebar), "geany-xitweaks-sidebar");
+
+  open_settings();
 
   // set up menu
   GtkWidget *item;
@@ -213,21 +210,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                        "xitweaks_toggle_visibility_menubar_",
                        _("Toggle visibility of the menubar."), nullptr);
 
-  // Enable features
-  pane_position_update(settings.sidebar_save_size_enabled ||
-                       settings.sidebar_auto_size_enabled);
-  sidebar_focus_update(settings.sidebar_focus_enabled);
-  g_lost_focus_clock = g_gain_focus_clock = clock();
-
-  if (settings.hide_menubar) {
-    gtk_widget_hide(geany_menubar);
-  } else {
-    gtk_widget_show(geany_menubar);
-  }
-
-  if (g_handle_signal_timeout == 0) {
-    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
-  }
+  on_pref_reload_config();
 
   return true;
 }
@@ -308,6 +291,10 @@ static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
     gtk_widget_hide(geany_menubar);
   } else {
     gtk_widget_show(geany_menubar);
+  }
+
+  if (g_handle_signal_timeout == 0) {
+    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
   }
 }
 
@@ -445,15 +432,9 @@ static void sidebar_focus_update(gboolean enable) {
         g_signal_connect(GTK_WIDGET(geany_sidebar), "select-page",
                          G_CALLBACK(on_select_page), nullptr);
 
-    g_handle_set_focus_child_sidebar =
-        g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_sidebar), nullptr);
-    g_handle_set_focus_child_msgwin =
-        g_signal_connect(GTK_WIDGET(geany_msgwin), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_msgwin), nullptr);
-    g_handle_set_focus_child_editor =
-        g_signal_connect(GTK_WIDGET(geany_editor), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_editor), nullptr);
+    g_handle_grab_notify_sidebar =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-notify",
+                         G_CALLBACK(on_grab_notify_sidebar), nullptr);
 
     g_handle_grab_focus_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-focus",
@@ -461,27 +442,27 @@ static void sidebar_focus_update(gboolean enable) {
     g_handle_grab_focus_msgwin =
         g_signal_connect(GTK_WIDGET(geany_msgwin), "grab-focus",
                          G_CALLBACK(on_grab_focus_msgwin), nullptr);
-    g_handle_grab_focus_editor =
-        g_signal_connect(GTK_WIDGET(geany_editor), "grab-focus",
-                         G_CALLBACK(on_grab_focus_editor), nullptr);
+
+    g_handle_set_focus_child_sidebar =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child_sidebar), nullptr);
+    g_handle_set_focus_child_msgwin =
+        g_signal_connect(GTK_WIDGET(geany_msgwin), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child_msgwin), nullptr);
   }
 
   if (!enable && g_handle_switch_page) {
     g_clear_signal_handler(&g_handle_switch_page, GTK_WIDGET(geany_sidebar));
 
-    g_clear_signal_handler(&g_handle_set_focus_child_sidebar,
-                           GTK_WIDGET(geany_sidebar));
-    g_clear_signal_handler(&g_handle_set_focus_child_msgwin,
-                           GTK_WIDGET(geany_msgwin));
-    g_clear_signal_handler(&g_handle_set_focus_child_editor,
-                           GTK_WIDGET(geany_editor));
-
     g_clear_signal_handler(&g_handle_grab_focus_sidebar,
                            GTK_WIDGET(geany_sidebar));
     g_clear_signal_handler(&g_handle_grab_focus_msgwin,
                            GTK_WIDGET(geany_msgwin));
-    g_clear_signal_handler(&g_handle_grab_focus_editor,
-                           GTK_WIDGET(geany_editor));
+
+    g_clear_signal_handler(&g_handle_set_focus_child_sidebar,
+                           GTK_WIDGET(geany_sidebar));
+    g_clear_signal_handler(&g_handle_set_focus_child_msgwin,
+                           GTK_WIDGET(geany_msgwin));
   }
 }
 
@@ -501,6 +482,11 @@ static gboolean on_select_page(GtkNotebook *self, gboolean object,
     sidebar_focus_highlight(true);
   }
   return false;
+}
+
+static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data) {
+  // msgwin_status_add("grab notify sidebar");
+  sidebar_focus_highlight(false);
 }
 
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data) {
@@ -539,19 +525,16 @@ static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
 static gboolean sidebar_focus_highlight(gboolean highlight) {
   static gboolean has_focus = false;
 
-  if (!has_focus && !highlight) {
+  if (highlight && clock() - g_lost_focus_clock < 100) {
+    return false;
+  }
+  if (!highlight && clock() - g_gain_focus_clock < 100) {
     return false;
   }
 
   if (!settings.sidebar_focus_enabled) {
     sidebar_focus_update(false);
     highlight = false;
-  }
-  if (highlight && clock() - g_lost_focus_clock < 100) {
-    return false;
-  }
-  if (!highlight && clock() - g_gain_focus_clock < 100) {
-    return false;
   }
 
   gint num_pages = gtk_notebook_get_n_pages(geany_sidebar);
@@ -574,8 +557,10 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
   if (highlight) {
     g_gain_focus_clock = clock();
+    g_lost_focus_clock = 0;
   } else {
     g_lost_focus_clock = clock();
+    g_gain_focus_clock = 0;
   }
   return false;
 }
@@ -661,6 +646,11 @@ static void on_document_signal(GObject *obj, GeanyDocument *doc,
   }
 }
 
+static void on_startup_signal(GObject *obj, GeanyDocument *doc,
+                              gpointer user_data) {
+  on_pref_reload_config();
+}
+
 static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data) {
   if (g_handle_signal_timeout == 0) {
@@ -671,15 +661,14 @@ static void on_project_signal(GObject *obj, GKeyFile *config,
 static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
                              SCNotification *notif, gpointer user_data) {
   switch (notif->nmhdr.code) {
-    case SCEN_KILLFOCUS:
-      g_timeout_add(50, G_SOURCE_FUNC(sidebar_focus_highlight),
-                    (gpointer) true);
-      break;
-    case SCN_UPDATEUI:
-    case SCEN_CHANGE:
+    case SCN_FOCUSIN:
     case SCEN_SETFOCUS:
       g_timeout_add(50, G_SOURCE_FUNC(sidebar_focus_highlight),
                     (gpointer) false);
+    case SCN_UPDATEUI:
+    case SCEN_CHANGE:
+    case SCN_FOCUSOUT:
+    case SCEN_KILLFOCUS:
     default:
       break;
   }
