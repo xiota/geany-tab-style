@@ -157,8 +157,6 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_hpane = ui_lookup_widget(GTK_WIDGET(geany_window), "hpaned1");
   geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
-  gtk_widget_set_name(GTK_WIDGET(geany_sidebar), "geany-xitweaks-sidebar");
-
   open_settings();
 
   // set up menu
