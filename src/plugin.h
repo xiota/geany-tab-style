@@ -45,6 +45,11 @@ extern struct TweakSettings settings;
 enum TweakShortcuts {
   TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN,
   TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR,
+  TWEAKS_KEY_COPY,
+  TWEAKS_KEY_PASTE_1,
+  TWEAKS_KEY_PASTE_2,
+
+  TWEAKS_KEY_COUNT,
 };
 
 #define GEANY_PSC(sig, cb)                                                  \

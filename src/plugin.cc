@@ -198,7 +198,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
 
   // Set keyboard shortcuts
   GeanyKeyGroup *group = plugin_set_key_group(
-      geany_plugin, _("Xi/Tweaks"), 2, (GeanyKeyGroupCallback)on_key_binding);
+      geany_plugin, _("Xi/Tweaks"), TWEAKS_KEY_COUNT, (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
       group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
@@ -209,6 +209,21 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                        GdkModifierType(0),
                        "xitweaks_toggle_visibility_menubar_",
                        _("Toggle visibility of the menubar."), nullptr);
+
+  keybindings_set_item(group, TWEAKS_KEY_COPY, nullptr, 0,
+                       GdkModifierType(0),
+                       "xitweaks_copy",
+                       _("Edit/Copy"), nullptr);
+
+  keybindings_set_item(group, TWEAKS_KEY_PASTE_1, nullptr, 0,
+                       GdkModifierType(0),
+                       "xitweaks_paste_1",
+                       _("Edit/Paste (1)"), nullptr);
+
+  keybindings_set_item(group, TWEAKS_KEY_PASTE_2, nullptr, 0,
+                       GdkModifierType(0),
+                       "xitweaks_paste_2",
+                       _("Edit/Paste (2)"), nullptr);
 
   on_pref_reload_config();
 
@@ -604,6 +619,13 @@ static bool on_key_binding(int key_id) {
       break;
     case TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR:
       on_toggle_visibility_menubar();
+      break;
+    case TWEAKS_KEY_COPY:
+      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD, GEANY_KEYS_CLIPBOARD_COPY);
+      break;
+    case TWEAKS_KEY_PASTE_1:
+    case TWEAKS_KEY_PASTE_2:
+      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD, GEANY_KEYS_CLIPBOARD_PASTE);
       break;
     default:
       return false;
