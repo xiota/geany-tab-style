@@ -43,17 +43,32 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data);
 
 // Sidebar Tab Focus Callbacks
 static void sidebar_focus_update(gboolean enable);
-static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
-                           gpointer user_data);
-static gboolean on_select_page(GtkNotebook *self, gboolean object,
-                               gpointer user_data);
-static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data);
-static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
-static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
+
+static void on_switch_page_sidebar(GtkNotebook *self, GtkWidget *page,
+                                   guint page_num, gpointer user_data);
+static gboolean on_select_page_sidebar(GtkNotebook *self, gboolean object,
+                                       gpointer user_data);
 static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
                                        gpointer user_data);
+static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
+static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data);
+
+static void on_switch_page_msgwin(GtkNotebook *self, GtkWidget *page,
+                                  guint page_num, gpointer user_data);
+static gboolean on_select_page_msgwin(GtkNotebook *self, gboolean object,
+                                      gpointer user_data);
 static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data);
+static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
+
+static void on_switch_page_editor(GtkNotebook *self, GtkWidget *page,
+                                  guint page_num, gpointer user_data);
+static gboolean on_select_page_editor(GtkNotebook *self, gboolean object,
+                                      gpointer user_data);
+static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
+                                      gpointer user_data);
+static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
+
 static gboolean sidebar_focus_highlight(gboolean highlight);
 
 // Preferences Callbacks
@@ -100,13 +115,22 @@ static GtkWidget *geany_menubar = nullptr;
 GtkWidget *g_tweaks_menu = nullptr;
 static GeanyDocument *g_current_doc = nullptr;
 
-static gulong g_handle_grab_notify_sidebar = 0;
+static gulong g_handle_switch_page_sidebar = 0;
+static gulong g_handle_select_page_sidebar = 0;
 static gulong g_handle_set_focus_child_sidebar = 0;
-static gulong g_handle_set_focus_child_msgwin = 0;
 static gulong g_handle_grab_focus_sidebar = 0;
+static gulong g_handle_grab_notify_sidebar = 0;
+
+static gulong g_handle_switch_page_msgwin = 0;
+static gulong g_handle_select_page_msgwin = 0;
+static gulong g_handle_set_focus_child_msgwin = 0;
 static gulong g_handle_grab_focus_msgwin = 0;
-static gulong g_handle_switch_page = 0;
-static gulong g_handle_select_page = 0;
+
+static gulong g_handle_switch_page_editor = 0;
+static gulong g_handle_select_page_editor = 0;
+static gulong g_handle_set_focus_child_editor = 0;
+static gulong g_handle_grab_focus_editor = 0;
+
 static gulong g_handle_pane_position = 0;
 static gulong g_handle_signal_timeout = 0;
 
@@ -195,8 +219,9 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                         g_tweaks_menu);
 
   // Set keyboard shortcuts
-  GeanyKeyGroup *group = plugin_set_key_group(
-      geany_plugin, _("Xi/Tweaks"), TWEAKS_KEY_COUNT, (GeanyKeyGroupCallback)on_key_binding);
+  GeanyKeyGroup *group =
+      plugin_set_key_group(geany_plugin, _("Xi/Tweaks"), TWEAKS_KEY_COUNT,
+                           (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
       group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
@@ -208,19 +233,15 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                        "xitweaks_toggle_visibility_menubar_",
                        _("Toggle visibility of the menubar."), nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_COPY, nullptr, 0,
-                       GdkModifierType(0),
-                       "xitweaks_copy",
-                       _("Edit/Copy"), nullptr);
+  keybindings_set_item(group, TWEAKS_KEY_COPY, nullptr, 0, GdkModifierType(0),
+                       "xitweaks_copy", _("Edit/Copy"), nullptr);
 
   keybindings_set_item(group, TWEAKS_KEY_PASTE_1, nullptr, 0,
-                       GdkModifierType(0),
-                       "xitweaks_paste_1",
+                       GdkModifierType(0), "xitweaks_paste_1",
                        _("Edit/Paste (1)"), nullptr);
 
   keybindings_set_item(group, TWEAKS_KEY_PASTE_2, nullptr, 0,
-                       GdkModifierType(0),
-                       "xitweaks_paste_2",
+                       GdkModifierType(0), "xitweaks_paste_2",
                        _("Edit/Paste (2)"), nullptr);
 
   on_pref_reload_config();
@@ -437,101 +458,155 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
  */
 
 static void sidebar_focus_update(gboolean enable) {
-  if (enable && !g_handle_switch_page) {
-    g_handle_switch_page =
+  if (enable && !g_handle_switch_page_sidebar) {
+    g_handle_switch_page_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "switch-page",
-                         G_CALLBACK(on_switch_page), nullptr);
-    g_handle_select_page =
+                         G_CALLBACK(on_switch_page_sidebar), nullptr);
+    g_handle_select_page_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "select-page",
-                         G_CALLBACK(on_select_page), nullptr);
-
+                         G_CALLBACK(on_select_page_sidebar), nullptr);
+    g_handle_set_focus_child_sidebar =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child_sidebar), nullptr);
+    g_handle_grab_focus_sidebar =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-focus",
+                         G_CALLBACK(on_grab_focus_sidebar), nullptr);
     g_handle_grab_notify_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-notify",
                          G_CALLBACK(on_grab_notify_sidebar), nullptr);
 
-    g_handle_grab_focus_sidebar =
-        g_signal_connect(GTK_WIDGET(geany_sidebar), "grab-focus",
-                         G_CALLBACK(on_grab_focus_sidebar), nullptr);
+    g_handle_switch_page_msgwin =
+        g_signal_connect(GTK_WIDGET(geany_msgwin), "switch-page",
+                         G_CALLBACK(on_switch_page_msgwin), nullptr);
+    g_handle_select_page_msgwin =
+        g_signal_connect(GTK_WIDGET(geany_msgwin), "select-page",
+                         G_CALLBACK(on_select_page_msgwin), nullptr);
+    g_handle_set_focus_child_msgwin =
+        g_signal_connect(GTK_WIDGET(geany_msgwin), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child_msgwin), nullptr);
     g_handle_grab_focus_msgwin =
         g_signal_connect(GTK_WIDGET(geany_msgwin), "grab-focus",
                          G_CALLBACK(on_grab_focus_msgwin), nullptr);
 
-    g_handle_set_focus_child_sidebar =
-        g_signal_connect(GTK_WIDGET(geany_sidebar), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_sidebar), nullptr);
-    g_handle_set_focus_child_msgwin =
-        g_signal_connect(GTK_WIDGET(geany_msgwin), "set-focus-child",
-                         G_CALLBACK(on_set_focus_child_msgwin), nullptr);
+    g_handle_switch_page_editor =
+        g_signal_connect(GTK_WIDGET(geany_editor), "switch-page",
+                         G_CALLBACK(on_switch_page_editor), nullptr);
+    g_handle_select_page_editor =
+        g_signal_connect(GTK_WIDGET(geany_editor), "select-page",
+                         G_CALLBACK(on_select_page_editor), nullptr);
+    g_handle_set_focus_child_editor =
+        g_signal_connect(GTK_WIDGET(geany_editor), "set-focus-child",
+                         G_CALLBACK(on_set_focus_child_editor), nullptr);
+    g_handle_grab_focus_editor =
+        g_signal_connect(GTK_WIDGET(geany_editor), "grab-focus",
+                         G_CALLBACK(on_grab_focus_editor), nullptr);
   }
 
-  if (!enable && g_handle_switch_page) {
-    g_clear_signal_handler(&g_handle_switch_page, GTK_WIDGET(geany_sidebar));
-
+  if (!enable && g_handle_switch_page_sidebar) {
+    g_clear_signal_handler(&g_handle_switch_page_sidebar,
+                           GTK_WIDGET(geany_sidebar));
+    g_clear_signal_handler(&g_handle_select_page_sidebar,
+                           GTK_WIDGET(geany_sidebar));
+    g_clear_signal_handler(&g_handle_set_focus_child_sidebar,
+                           GTK_WIDGET(geany_sidebar));
     g_clear_signal_handler(&g_handle_grab_focus_sidebar,
                            GTK_WIDGET(geany_sidebar));
+    g_clear_signal_handler(&g_handle_grab_notify_sidebar,
+                           GTK_WIDGET(geany_sidebar));
+
+    g_clear_signal_handler(&g_handle_switch_page_msgwin,
+                           GTK_WIDGET(geany_msgwin));
+    g_clear_signal_handler(&g_handle_select_page_msgwin,
+                           GTK_WIDGET(geany_msgwin));
+    g_clear_signal_handler(&g_handle_set_focus_child_msgwin,
+                           GTK_WIDGET(geany_msgwin));
     g_clear_signal_handler(&g_handle_grab_focus_msgwin,
                            GTK_WIDGET(geany_msgwin));
 
-    g_clear_signal_handler(&g_handle_set_focus_child_sidebar,
-                           GTK_WIDGET(geany_sidebar));
-    g_clear_signal_handler(&g_handle_set_focus_child_msgwin,
-                           GTK_WIDGET(geany_msgwin));
+    g_clear_signal_handler(&g_handle_switch_page_editor,
+                           GTK_WIDGET(geany_editor));
+    g_clear_signal_handler(&g_handle_select_page_editor,
+                           GTK_WIDGET(geany_editor));
+    g_clear_signal_handler(&g_handle_set_focus_child_editor,
+                           GTK_WIDGET(geany_editor));
+    g_clear_signal_handler(&g_handle_grab_focus_editor,
+                           GTK_WIDGET(geany_editor));
   }
 }
 
-static void on_switch_page(GtkNotebook *self, GtkWidget *page, guint page_num,
-                           gpointer user_data) {
-  // msgwin_status_add("switch page");
+static void on_switch_page_sidebar(GtkNotebook *self, GtkWidget *page,
+                                   guint page_num, gpointer user_data) {
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
-    // prevent race condition
     g_timeout_add(25, G_SOURCE_FUNC(sidebar_focus_highlight), (gpointer) true);
   }
 }
 
-static gboolean on_select_page(GtkNotebook *self, gboolean object,
-                               gpointer user_data) {
-  // msgwin_status_add("select page");
+static gboolean on_select_page_sidebar(GtkNotebook *self, gboolean object,
+                                       gpointer user_data) {
   if (gtk_widget_has_focus(GTK_WIDGET(self))) {
     sidebar_focus_highlight(true);
   }
   return false;
 }
 
-static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data) {
-  // msgwin_status_add("grab notify sidebar");
-  sidebar_focus_highlight(false);
+static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
+                                       gpointer user_data) {
+  sidebar_focus_highlight(true);
 }
 
 static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data) {
-  // msgwin_status_add("grab focus sidebar");
   sidebar_focus_highlight(true);
 }
 
-static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data) {
-  // msgwin_status_add("grab focus msgwin");
+static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data) {
   sidebar_focus_highlight(false);
 }
 
-static void on_grab_focus_editor(GtkWidget *self, gpointer user_data) {
-  // msgwin_status_add("grab focus editor");
-  sidebar_focus_highlight(false);
+static void on_switch_page_msgwin(GtkNotebook *self, GtkWidget *page,
+                                  guint page_num, gpointer user_data) {
+  if (gtk_widget_has_focus(GTK_WIDGET(self))) {
+    sidebar_focus_highlight(false);
+  }
 }
 
-static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
-                                       gpointer user_data) {
-  // msgwin_status_add("set focus child sidebar");
-  sidebar_focus_highlight(true);
+static gboolean on_select_page_msgwin(GtkNotebook *self, gboolean object,
+                                      gpointer user_data) {
+  if (gtk_widget_has_focus(GTK_WIDGET(self))) {
+    sidebar_focus_highlight(false);
+  }
+  return false;
 }
 
 static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
-  // msgwin_status_add("set focus child msgwin");
   sidebar_focus_highlight(false);
+}
+
+static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data) {
+  sidebar_focus_highlight(false);
+}
+
+static void on_switch_page_editor(GtkNotebook *self, GtkWidget *page,
+                                  guint page_num, gpointer user_data) {
+  if (gtk_widget_has_focus(GTK_WIDGET(self))) {
+    sidebar_focus_highlight(false);
+  }
+}
+
+static gboolean on_select_page_editor(GtkNotebook *self, gboolean object,
+                                      gpointer user_data) {
+  if (gtk_widget_has_focus(GTK_WIDGET(self))) {
+    sidebar_focus_highlight(false);
+  }
+  return false;
 }
 
 static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
                                       gpointer user_data) {
-  // msgwin_status_add("set focus child editor");
+  sidebar_focus_highlight(false);
+}
+
+static void on_grab_focus_editor(GtkWidget *self, gpointer user_data) {
   sidebar_focus_highlight(false);
 }
 
@@ -619,11 +694,13 @@ static bool on_key_binding(int key_id) {
       on_toggle_visibility_menubar();
       break;
     case TWEAKS_KEY_COPY:
-      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD, GEANY_KEYS_CLIPBOARD_COPY);
+      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD,
+                               GEANY_KEYS_CLIPBOARD_COPY);
       break;
     case TWEAKS_KEY_PASTE_1:
     case TWEAKS_KEY_PASTE_2:
-      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD, GEANY_KEYS_CLIPBOARD_PASTE);
+      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD,
+                               GEANY_KEYS_CLIPBOARD_PASTE);
       break;
     default:
       return false;
