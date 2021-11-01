@@ -567,8 +567,10 @@ static gboolean sidebar_focus_highlight(gboolean highlight) {
 
     if (highlight && i == cur_page) {
       gtk_widget_set_name(label, "geany-xitweaks-sidebar-tab-focus");
+      gtk_widget_set_name(page, "geany-xitweaks-sidebar-page-focus");
     } else {
-      gtk_widget_set_name(label, nullptr);
+      gtk_widget_set_name(label, "geany-xitweaks-sidebar-tab-unfocus");
+      gtk_widget_set_name(page, "geany-xitweaks-sidebar-page-unfocus");
     }
   }
 
