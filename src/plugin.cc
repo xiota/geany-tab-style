@@ -29,77 +29,6 @@
 #include "prefs.h"
 
 /* ********************
- * Function Declarations
- */
-// Plugin Setup
-static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data);
-static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data);
-static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
-                                   gpointer pdata);
-
-// Pane Position Callbacks
-static void pane_position_update(gboolean enable);
-static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data);
-
-// Sidebar Tab Focus Callbacks
-static void sidebar_focus_update(gboolean enable);
-
-static void on_switch_page_sidebar(GtkNotebook *self, GtkWidget *page,
-                                   guint page_num, gpointer user_data);
-static gboolean on_select_page_sidebar(GtkNotebook *self, gboolean object,
-                                       gpointer user_data);
-static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
-                                       gpointer user_data);
-static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
-static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data);
-
-static void on_switch_page_msgwin(GtkNotebook *self, GtkWidget *page,
-                                  guint page_num, gpointer user_data);
-static gboolean on_select_page_msgwin(GtkNotebook *self, gboolean object,
-                                      gpointer user_data);
-static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
-                                      gpointer user_data);
-static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
-
-static void on_switch_page_editor(GtkNotebook *self, GtkWidget *page,
-                                  guint page_num, gpointer user_data);
-static gboolean on_select_page_editor(GtkNotebook *self, gboolean object,
-                                      gpointer user_data);
-static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
-                                      gpointer user_data);
-static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
-
-static gboolean sidebar_focus_highlight(gboolean highlight);
-
-// Preferences Callbacks
-static void on_pref_reload_config(GtkWidget *self = nullptr,
-                                  GtkWidget *dialog = nullptr);
-static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog);
-static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog);
-static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog);
-static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog);
-static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog);
-
-// Keybinding Functions and Callbacks
-static void on_switch_focus_editor_sidebar_msgwin();
-static void on_toggle_visibility_menubar();
-static bool on_key_binding(int key_id);
-static GtkWidget *find_focus_widget(GtkWidget *widget);
-
-// Geany Signal Callbacks
-static void on_startup_signal(GObject *obj, GeanyDocument *doc,
-                              gpointer user_data);
-static void on_document_signal(GObject *obj, GeanyDocument *doc,
-                               gpointer user_data);
-static void on_project_signal(GObject *obj, GKeyFile *config,
-                              gpointer user_data);
-static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
-                             SCNotification *notif, gpointer user_data);
-
-// Other functions
-static gboolean show_column_markers(gpointer user_data = nullptr);
-
-/* ********************
  * Globals
  */
 GeanyPlugin *geany_plugin;
@@ -136,6 +65,8 @@ static gulong g_handle_signal_timeout = 0;
 
 static clock_t g_lost_focus_clock = 0;
 static clock_t g_gain_focus_clock = 0;
+
+static GeanyKeyGroup *gKeyGroup = nullptr;
 
 /* ********************
  * Plugin Setup
@@ -181,7 +112,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_hpane = ui_lookup_widget(GTK_WIDGET(geany_window), "hpaned1");
   geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
-  open_settings();
+  settings.open();
 
   // set up menu
   GtkWidget *item;
@@ -219,28 +150,28 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                         g_tweaks_menu);
 
   // Set keyboard shortcuts
-  GeanyKeyGroup *group =
-      plugin_set_key_group(geany_plugin, _("Xi/Tweaks"), TWEAKS_KEY_COUNT,
-                           (GeanyKeyGroupCallback)on_key_binding);
+  gKeyGroup = plugin_set_key_group(geany_plugin, "Xi/Tweaks", TWEAKS_KEY_COUNT,
+                                   (GeanyKeyGroupCallback)on_key_binding);
 
   keybindings_set_item(
-      group, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
+      gKeyGroup, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
       GdkModifierType(0), "xitweaks_switch_focus_editor_sidebar_msgwin",
       _("Switch focus among editor, sidebar, and message window."), nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, nullptr, 0,
-                       GdkModifierType(0),
+  keybindings_set_item(gKeyGroup, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, nullptr,
+                       0, GdkModifierType(0),
                        "xitweaks_toggle_visibility_menubar_",
                        _("Toggle visibility of the menubar."), nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_COPY, nullptr, 0, GdkModifierType(0),
-                       "xitweaks_copy", _("Edit/Copy"), nullptr);
+  keybindings_set_item(gKeyGroup, TWEAKS_KEY_COPY, nullptr, 0,
+                       GdkModifierType(0), "xitweaks_copy", _("Edit/Copy"),
+                       nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_PASTE_1, nullptr, 0,
+  keybindings_set_item(gKeyGroup, TWEAKS_KEY_PASTE_1, nullptr, 0,
                        GdkModifierType(0), "xitweaks_paste_1",
                        _("Edit/Paste (1)"), nullptr);
 
-  keybindings_set_item(group, TWEAKS_KEY_PASTE_2, nullptr, 0,
+  keybindings_set_item(gKeyGroup, TWEAKS_KEY_PASTE_2, nullptr, 0,
                        GdkModifierType(0), "xitweaks_paste_2",
                        _("Edit/Paste (2)"), nullptr);
 
@@ -255,7 +186,7 @@ static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
   sidebar_focus_update(false);
   pane_position_update(false);
 
-  save_settings();
+  settings.save();
 }
 
 static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
@@ -315,14 +246,15 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
  */
 
 static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
-  open_settings();
+  settings.open();
 
   pane_position_update(settings.sidebar_save_size_enabled ||
                        settings.sidebar_auto_size_enabled);
   sidebar_focus_update(settings.sidebar_focus_enabled);
 
-  if (settings.hide_menubar) {
-    gtk_widget_hide(geany_menubar);
+  if (settings.menubar_hide_on_start ||
+      (settings.menubar_restore_state && !settings.menubar_previous_state)) {
+    hide_menubar();
   } else {
     gtk_widget_show(geany_menubar);
   }
@@ -333,11 +265,11 @@ static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog) {
-  save_settings();
+  settings.save();
 }
 
 static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
-  save_default_settings();
+  settings.save_default();
 }
 
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
@@ -349,7 +281,7 @@ static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
-  open_settings();
+  settings.open();
   std::string conf_fn =
       cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
                                         "xitweaks", "xitweaks.conf", nullptr));
@@ -677,10 +609,28 @@ static void on_switch_focus_editor_sidebar_msgwin() {
   }
 }
 
-static void on_toggle_visibility_menubar() {
+static bool hide_menubar() {
   if (gtk_widget_is_visible(geany_menubar)) {
-    gtk_widget_hide(geany_menubar);
-  } else {
+    GeanyKeyBinding *kb =
+        keybindings_get_item(gKeyGroup, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR);
+    if (kb->key != 0) {
+      gtk_widget_hide(geany_menubar);
+      gchar *val = gtk_accelerator_name(kb->key, kb->mods);
+      msgwin_status_add(_("Menubar has been hidden.  To reshow it, use: %s"),
+                        val);
+      g_free(val);
+      return true;
+    } else {
+      msgwin_status_add(
+          _("Menubar will not be hidden until after a keybinding to reshow "
+            " it has been set."));
+      return false;
+    }
+  }
+  return false;
+}
+static void on_toggle_visibility_menubar() {
+  if (!hide_menubar()) {
     gtk_widget_show(geany_menubar);
   }
 }

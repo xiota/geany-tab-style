@@ -23,35 +23,37 @@
 
 #include "plugin.h"
 
-G_BEGIN_DECLS
+class TweakSettings {
+ public:
+  TweakSettings();
+  ~TweakSettings() { save(); }
 
-struct TweakSettings {
-  gboolean sidebar_focus_enabled;
+  void open();
+  void load(GKeyFile *kf);
+  void save();
+  void save_default();
 
-  gboolean sidebar_save_size_enabled;
-  gboolean sidebar_save_size_update;
-  int sidebar_save_size_normal;
-  int sidebar_save_size_maximized;
+ public:
+  gboolean sidebar_focus_enabled = false;
 
-  gboolean sidebar_auto_size_enabled;
-  int sidebar_auto_size_normal;
-  int sidebar_auto_size_maximized;
+  gboolean sidebar_save_size_enabled = true;
+  gboolean sidebar_save_size_update = true;
+  int sidebar_save_size_normal = 0;
+  int sidebar_save_size_maximized = 0;
 
-  gboolean hide_menubar;
+  gboolean sidebar_auto_size_enabled = false;
+  int sidebar_auto_size_normal = 76;
+  int sidebar_auto_size_maximized = 100;
 
-  gboolean column_marker_enable;
-  int column_marker_count;
+  gboolean column_marker_enable = false;
+  int column_marker_count = 0;
   int *column_marker_columns;
   int *column_marker_colors;
+
+  gboolean menubar_hide_on_start = false;
+  gboolean menubar_restore_state = false;
+  gboolean menubar_previous_state = true;
 };
-
-void init_settings();
-void open_settings();
-void load_settings(GKeyFile *kf);
-void save_settings();
-void save_default_settings();
-
-G_END_DECLS
 
 // Macros to make loading settings easier
 #define PLUGIN_GROUP "tweaks"
@@ -61,20 +63,7 @@ G_END_DECLS
 #define SET_KEY(T, key, _val) \
   g_key_file_set_##T(kf, PLUGIN_GROUP, (key), (_val))
 
-#define LOAD_KEY_STRING(key, def)        \
-  do {                                   \
-    if (HAS_KEY(#key)) {                 \
-      char *val = GET_KEY(string, #key); \
-      if (val) {                         \
-        settings.key = g_strdup(val);    \
-      } else {                           \
-        settings.key = g_strdup((def));  \
-      }                                  \
-      g_free(val);                       \
-    }                                    \
-  } while (0)
-
-#define LOAD_KEY_BOOLEAN(key, def)           \
+#define GET_KEY_BOOLEAN(key, def)            \
   do {                                       \
     if (HAS_KEY(#key)) {                     \
       settings.key = GET_KEY(boolean, #key); \
@@ -83,7 +72,7 @@ G_END_DECLS
     }                                        \
   } while (0)
 
-#define LOAD_KEY_INTEGER(key, def, min) \
+#define GET_KEY_INTEGER(key, def, min)  \
   do {                                  \
     if (HAS_KEY(#key)) {                \
       int val = GET_KEY(integer, #key); \
@@ -99,7 +88,7 @@ G_END_DECLS
     }                                   \
   } while (0)
 
-#define LOAD_KEY_DOUBLE(key, def, min) \
+#define GET_KEY_DOUBLE(key, def, min)  \
   do {                                 \
     if (HAS_KEY(#key)) {               \
       int val = GET_KEY(double, #key); \
