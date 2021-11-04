@@ -98,6 +98,9 @@ void TweakSettings::save() {
 
   SET_KEY(boolean, "menubar_hide_on_start", menubar_hide_on_start);
   SET_KEY(boolean, "menubar_restore_state", menubar_restore_state);
+
+  GtkWidget * geany_menubar = ui_lookup_widget(GTK_WIDGET(geany->main_widgets->window), "hbox_menubar");
+  settings.menubar_previous_state = gtk_widget_is_visible(geany_menubar);
   SET_KEY(boolean, "menubar_previous_state", menubar_previous_state);
 
   SET_KEY(boolean, "column_marker_enable", column_marker_enable);

@@ -93,6 +93,7 @@ static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
 static gboolean sidebar_focus_highlight(gboolean highlight);
 
 // Preferences Callbacks
+static gboolean reload_config(gpointer user_data);
 static void on_pref_reload_config(GtkWidget *self = nullptr,
                                   GtkWidget *dialog = nullptr);
 static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog);

@@ -61,7 +61,8 @@ static gulong g_handle_set_focus_child_editor = 0;
 static gulong g_handle_grab_focus_editor = 0;
 
 static gulong g_handle_pane_position = 0;
-static gulong g_handle_signal_timeout = 0;
+static gulong g_handle_column_markers = 0;
+static gulong g_handle_reload_config = 0;
 
 static clock_t g_lost_focus_clock = 0;
 static clock_t g_gain_focus_clock = 0;
@@ -79,7 +80,7 @@ PLUGIN_SET_INFO(
     "xiota")
 
 void plugin_init(GeanyData *data) {
-  GEANY_PSC("geany-startup-complete", on_document_signal);
+  GEANY_PSC("geany-startup-complete", on_startup_signal);
   GEANY_PSC("editor-notify", on_editor_notify);
   GEANY_PSC("document-activate", on_document_signal);
   GEANY_PSC("document-new", on_document_signal);
@@ -175,7 +176,10 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
                        GdkModifierType(0), "xitweaks_paste_2",
                        _("Edit/Paste (2)"), nullptr);
 
-  on_pref_reload_config();
+  if (g_handle_reload_config == 0) {
+    g_handle_reload_config = 1;
+    g_idle_add(reload_config, nullptr);
+  }
 
   return true;
 }
@@ -245,22 +249,35 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
  * Preferences Callbacks
  */
 
-static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
+static gboolean reload_config(gpointer user_data) {
   settings.open();
 
-  pane_position_update(settings.sidebar_save_size_enabled ||
-                       settings.sidebar_auto_size_enabled);
-  sidebar_focus_update(settings.sidebar_focus_enabled);
-
-  if (settings.menubar_hide_on_start ||
-      (settings.menubar_restore_state && !settings.menubar_previous_state)) {
+  if (settings.menubar_hide_on_start) {
+    hide_menubar();
+  } else if (settings.menubar_restore_state &&
+             !settings.menubar_previous_state) {
     hide_menubar();
   } else {
     gtk_widget_show(geany_menubar);
   }
 
-  if (g_handle_signal_timeout == 0) {
-    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  pane_position_update(settings.sidebar_save_size_enabled ||
+                       settings.sidebar_auto_size_enabled);
+  sidebar_focus_update(settings.sidebar_focus_enabled);
+
+  if (g_handle_column_markers == 0) {
+    g_handle_column_markers = 1;
+    g_idle_add(show_column_markers, nullptr);
+  }
+
+  g_handle_reload_config = 0;
+  return FALSE;
+}
+
+static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
+  if (g_handle_reload_config == 0) {
+    g_handle_reload_config = 1;
+    g_idle_add(reload_config, nullptr);
   }
 }
 
@@ -389,8 +406,17 @@ static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
  * Sidebar Tab Focus Callbacks
  */
 
+static void state_flags_changed(GtkWidget *self, GtkStateFlags flags,
+                                gpointer user_data) {
+  sidebar_focus_highlight(true);
+}
+
 static void sidebar_focus_update(gboolean enable) {
   if (enable && !g_handle_switch_page_sidebar) {
+    g_handle_switch_page_sidebar =
+        g_signal_connect(GTK_WIDGET(geany_sidebar), "state-flags-changed",
+                         G_CALLBACK(state_flags_changed), nullptr);
+
     g_handle_switch_page_sidebar =
         g_signal_connect(GTK_WIDGET(geany_sidebar), "switch-page",
                          G_CALLBACK(on_switch_page_sidebar), nullptr);
@@ -601,12 +627,15 @@ static void on_switch_focus_editor_sidebar_msgwin() {
     if (gtk_widget_has_focus(GTK_WIDGET(doc->editor->sci)) &&
         gtk_widget_is_visible(GTK_WIDGET(geany_sidebar))) {
       keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_SIDEBAR);
+      g_signal_emit_by_name(G_OBJECT(geany_sidebar), "grab-focus", nullptr);
     } else if (gtk_widget_has_focus(page) &&
                gtk_widget_is_visible(GTK_WIDGET(geany_msgwin))) {
       keybindings_send_command(GEANY_KEY_GROUP_FOCUS,
                                GEANY_KEYS_FOCUS_MESSAGE_WINDOW);
+      g_signal_emit_by_name(G_OBJECT(geany_sidebar), "grab-notify", nullptr);
     } else {
       keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
+      g_signal_emit_by_name(G_OBJECT(geany_sidebar), "grab-notify", nullptr);
     }
   }
 }
@@ -690,20 +719,25 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {
-  if (g_handle_signal_timeout == 0) {
-    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  if (g_handle_column_markers == 0) {
+    g_handle_column_markers = 1;
+    g_idle_add(show_column_markers, nullptr);
   }
 }
 
 static void on_startup_signal(GObject *obj, GeanyDocument *doc,
                               gpointer user_data) {
-  on_pref_reload_config();
+  if (g_handle_reload_config == 0) {
+    g_handle_reload_config = 1;
+    g_idle_add(reload_config, nullptr);
+  }
 }
 
 static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data) {
-  if (g_handle_signal_timeout == 0) {
-    g_handle_signal_timeout = g_timeout_add(100, show_column_markers, nullptr);
+  if (g_handle_column_markers == 0) {
+    g_handle_column_markers = 1;
+    g_idle_add(show_column_markers, nullptr);
   }
 }
 
@@ -729,7 +763,6 @@ static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
  */
 
 static gboolean show_column_markers(gpointer user_data) {
-  g_handle_signal_timeout = 0;
   GeanyDocument *doc = document_get_current();
   g_return_val_if_fail(DOC_VALID(doc), false);
 
@@ -746,5 +779,7 @@ static gboolean show_column_markers(gpointer user_data) {
       }
     }
   }
+
+  g_handle_column_markers = 0;
   return false;
 }
