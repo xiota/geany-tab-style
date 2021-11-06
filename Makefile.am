@@ -15,8 +15,10 @@ xi_tweaks_la_CXXFLAGS = $(GEANY_CFLAGS) \
 	-DG_LOG_DOMAIN=\""Tweaks"\" \
 	-DTWEAKS_README=\""$(cf_docdir)/Readme.md"\" \
 	-DTWEAKS_CONFIG=\""$(cf_datadir)/xi-tweaks.conf"\"
+
 xi_tweaks_la_LIBADD = $(GEANY_LIBS)
 xi_tweaks_la_LDFLAGS = -module -avoid-version
+
 xi_tweaks_la_SOURCES = \
 	src/plugin.cc \
 	src/plugin.h \

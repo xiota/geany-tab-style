@@ -61,7 +61,6 @@ static gulong g_handle_set_focus_child_editor = 0;
 static gulong g_handle_grab_focus_editor = 0;
 
 static gulong g_handle_pane_position = 0;
-static gulong g_handle_column_markers = 0;
 static gulong g_handle_reload_config = 0;
 
 static clock_t g_lost_focus_clock = 0;
@@ -74,10 +73,8 @@ static GeanyKeyGroup *gKeyGroup = nullptr;
  */
 PLUGIN_VERSION_CHECK(211)
 
-PLUGIN_SET_INFO(
-    "Xi/Tweaks",
-    "Tweaks for Geany.  Multiple column markers.  Extra keybindings.", "0.01.0",
-    "xiota")
+PLUGIN_SET_INFO("Xi/Tweaks", "Miscellaneous tweaks for Geany.", "0.01.0",
+                "xiota")
 
 void plugin_init(GeanyData *data) {
   GEANY_PSC("geany-startup-complete", on_startup_signal);
@@ -188,7 +185,6 @@ static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
   gtk_widget_destroy(g_tweaks_menu);
 
   sidebar_focus_update(false);
-  pane_position_update(false);
 
   settings.save();
 }
@@ -261,15 +257,6 @@ static gboolean reload_config(gpointer user_data) {
     gtk_widget_show(geany_menubar);
   }
 
-  pane_position_update(settings.sidebar_save_size_enabled ||
-                       settings.sidebar_auto_size_enabled);
-  sidebar_focus_update(settings.sidebar_focus_enabled);
-
-  if (g_handle_column_markers == 0) {
-    g_handle_column_markers = 1;
-    g_idle_add(show_column_markers, nullptr);
-  }
-
   g_handle_reload_config = 0;
   return FALSE;
 }
@@ -290,7 +277,7 @@ static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
 }
 
 static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
-  std::string conf_dn = cstr_assign_free(
+  std::string conf_dn = cstr_assign(
       g_build_filename(geany_data->app->configdir, "plugins", nullptr));
 
   std::string command = R"(xdg-open ")" + conf_dn + R"(")";
@@ -300,8 +287,8 @@ static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
 static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   settings.open();
   std::string conf_fn =
-      cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
-                                        "xitweaks", "xitweaks.conf", nullptr));
+      cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
+                                   "xitweaks", "xitweaks.conf", nullptr));
   GeanyDocument *doc =
       document_open_file(conf_fn.c_str(), false, nullptr, nullptr);
   document_reload_force(doc, nullptr);
@@ -313,93 +300,6 @@ static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
 
 static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
   plugin_show_configure(geany_plugin);
-}
-
-/* ********************
- * Pane Position Callbacks
- */
-
-static void pane_position_update(gboolean enable) {
-  if (enable && !g_handle_pane_position) {
-    g_handle_pane_position = g_signal_connect(
-        GTK_WIDGET(geany_hpane), "draw", G_CALLBACK(on_draw_pane), nullptr);
-  }
-
-  if (!enable && g_handle_pane_position) {
-    g_clear_signal_handler(&g_handle_pane_position, GTK_WIDGET(geany_hpane));
-  }
-}
-
-static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data) {
-  if (!settings.sidebar_save_size_enabled &&
-      !settings.sidebar_auto_size_enabled) {
-    pane_position_update(false);
-    return false;
-  }
-
-  int pos_auto_normal = 0;
-  int pos_auto_maximized = 0;
-
-  if (settings.sidebar_auto_size_enabled) {
-    GeanyDocument *doc = document_get_current();
-    if (doc != nullptr) {
-      std::string str_auto_normal(settings.sidebar_auto_size_normal, '0');
-      std::string str_auto_maximized(settings.sidebar_auto_size_maximized, '0');
-
-      int pos_origin = (int)scintilla_send_message(
-          doc->editor->sci, SCI_POINTXFROMPOSITION, 0, 1);
-      int pos_normal = (int)scintilla_send_message(
-          doc->editor->sci, SCI_TEXTWIDTH, 0, (gulong)str_auto_normal.c_str());
-      int pos_maximized =
-          (int)scintilla_send_message(doc->editor->sci, SCI_TEXTWIDTH, 0,
-                                      (gulong)str_auto_maximized.c_str());
-      pos_auto_normal = pos_origin + pos_normal;
-      pos_auto_maximized = pos_origin + pos_maximized;
-    }
-  }
-
-  static gboolean window_maximized_previous = false;
-  const gboolean window_maximized_current =
-      gtk_window_is_maximized(geany_window);
-
-  if (window_maximized_current == window_maximized_previous) {
-    // save current sidebar divider position
-    if (settings.sidebar_save_size_update) {
-      if (window_maximized_current) {
-        settings.sidebar_save_size_maximized =
-            gtk_paned_get_position(GTK_PANED(self));
-      } else {
-        settings.sidebar_save_size_normal =
-            gtk_paned_get_position(GTK_PANED(self));
-      }
-    }
-  } else if (settings.sidebar_auto_size_enabled) {
-    if (window_maximized_current) {
-      if (pos_auto_maximized > 100) {
-        gtk_paned_set_position(GTK_PANED(self), pos_auto_maximized);
-      }
-    } else {
-      if (pos_auto_normal > 100) {
-        gtk_paned_set_position(GTK_PANED(self), pos_auto_normal);
-      }
-    }
-    window_maximized_previous = window_maximized_current;
-  } else if (settings.sidebar_save_size_enabled) {
-    if (window_maximized_current) {
-      if (settings.sidebar_save_size_maximized) {
-        gtk_paned_set_position(GTK_PANED(self),
-                               settings.sidebar_save_size_maximized);
-      }
-    } else {
-      if (settings.sidebar_save_size_normal) {
-        gtk_paned_set_position(GTK_PANED(self),
-                               settings.sidebar_save_size_normal);
-      }
-    }
-    window_maximized_previous = window_maximized_current;
-  }
-
-  return false;
 }
 
 /* ********************
@@ -718,12 +618,7 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
  */
 
 static void on_document_signal(GObject *obj, GeanyDocument *doc,
-                               gpointer user_data) {
-  if (g_handle_column_markers == 0) {
-    g_handle_column_markers = 1;
-    g_idle_add(show_column_markers, nullptr);
-  }
-}
+                               gpointer user_data) {}
 
 static void on_startup_signal(GObject *obj, GeanyDocument *doc,
                               gpointer user_data) {
@@ -734,12 +629,7 @@ static void on_startup_signal(GObject *obj, GeanyDocument *doc,
 }
 
 static void on_project_signal(GObject *obj, GKeyFile *config,
-                              gpointer user_data) {
-  if (g_handle_column_markers == 0) {
-    g_handle_column_markers = 1;
-    g_idle_add(show_column_markers, nullptr);
-  }
-}
+                              gpointer user_data) {}
 
 static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
                              SCNotification *notif, gpointer user_data) {
@@ -755,31 +645,5 @@ static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
     default:
       break;
   }
-  return false;
-}
-
-/* ********************
- * Other Functions
- */
-
-static gboolean show_column_markers(gpointer user_data) {
-  GeanyDocument *doc = document_get_current();
-  g_return_val_if_fail(DOC_VALID(doc), false);
-
-  if (settings.column_marker_enable) {
-    scintilla_send_message(doc->editor->sci, SCI_SETEDGEMODE, 3, 3);
-    scintilla_send_message(doc->editor->sci, SCI_MULTIEDGECLEARALL, 0, 0);
-
-    if (settings.column_marker_columns != nullptr &&
-        settings.column_marker_colors != nullptr) {
-      for (int i = 0; i < settings.column_marker_count; i++) {
-        scintilla_send_message(doc->editor->sci, SCI_MULTIEDGEADDLINE,
-                               settings.column_marker_columns[i],
-                               settings.column_marker_colors[i]);
-      }
-    }
-  }
-
-  g_handle_column_markers = 0;
   return false;
 }

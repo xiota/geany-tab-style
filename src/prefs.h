@@ -25,7 +25,7 @@
 
 class TweakSettings {
  public:
-  TweakSettings();
+  TweakSettings() = default;
   ~TweakSettings() { save(); }
 
   void open();
@@ -35,20 +35,6 @@ class TweakSettings {
 
  public:
   gboolean sidebar_focus_enabled = false;
-
-  gboolean sidebar_save_size_enabled = true;
-  gboolean sidebar_save_size_update = true;
-  int sidebar_save_size_normal = 0;
-  int sidebar_save_size_maximized = 0;
-
-  gboolean sidebar_auto_size_enabled = false;
-  int sidebar_auto_size_normal = 76;
-  int sidebar_auto_size_maximized = 100;
-
-  gboolean column_marker_enable = false;
-  int column_marker_count = 0;
-  int *column_marker_columns;
-  int *column_marker_colors;
 
   gboolean menubar_hide_on_start = false;
   gboolean menubar_restore_state = false;
@@ -108,12 +94,6 @@ class TweakSettings {
   do {                      \
     g_key_file_free(_z_);   \
     _z_ = nullptr;          \
-  } while (0)
-
-#define ADD_COLUMN_MARKER(idx, col, bgr)           \
-  do {                                             \
-    settings.column_marker_columns[(idx)] = (col); \
-    settings.column_marker_colors[(idx)] = (bgr);  \
   } while (0)
 
 #endif  // XITWEAKS_PREFS_H

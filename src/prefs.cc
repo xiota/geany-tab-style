@@ -28,7 +28,7 @@ TweakSettings settings;
 
 void TweakSettings::open() {
   std::string conf_fn =
-      cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
+      cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
                                         "xitweaks", "xitweaks.conf", nullptr));
   std::string conf_dn = g_path_get_dirname(conf_fn.c_str());
   g_mkdir_with_parents(conf_dn.c_str(), 0755);
@@ -52,9 +52,9 @@ void TweakSettings::open() {
 
 void TweakSettings::save_default() {
   std::string conf_fn =
-      cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
+      cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
                                         "xitweaks", "xitweaks.conf", nullptr));
-  std::string conf_dn = cstr_assign_free(g_path_get_dirname(conf_fn.c_str()));
+  std::string conf_dn = cstr_assign(g_path_get_dirname(conf_fn.c_str()));
   g_mkdir_with_parents(conf_dn.c_str(), 0755);
 
   // delete if file exists
@@ -75,7 +75,7 @@ void TweakSettings::save_default() {
 void TweakSettings::save() {
   GKeyFile *kf = g_key_file_new();
   std::string fn =
-      cstr_assign_free(g_build_filename(geany_data->app->configdir, "plugins",
+      cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
                                         "xitweaks", "xitweaks.conf", nullptr));
 
   // Load old contents in case user changed file outside of GUI
@@ -87,15 +87,6 @@ void TweakSettings::save() {
   // Update settings with new contents
   SET_KEY(boolean, "sidebar_focus_enabled", sidebar_focus_enabled);
 
-  SET_KEY(boolean, "sidebar_save_size_enabled", sidebar_save_size_enabled);
-  SET_KEY(boolean, "sidebar_save_size_update", sidebar_save_size_update);
-  SET_KEY(integer, "sidebar_save_size_normal", sidebar_save_size_normal);
-  SET_KEY(integer, "sidebar_save_size_maximized", sidebar_save_size_maximized);
-
-  SET_KEY(boolean, "sidebar_auto_size_enabled", sidebar_auto_size_enabled);
-  SET_KEY(integer, "sidebar_auto_size_normal", sidebar_auto_size_normal);
-  SET_KEY(integer, "sidebar_auto_size_maximized", sidebar_auto_size_maximized);
-
   SET_KEY(boolean, "menubar_hide_on_start", menubar_hide_on_start);
   SET_KEY(boolean, "menubar_restore_state", menubar_restore_state);
 
@@ -103,17 +94,9 @@ void TweakSettings::save() {
   settings.menubar_previous_state = gtk_widget_is_visible(geany_menubar);
   SET_KEY(boolean, "menubar_previous_state", menubar_previous_state);
 
-  SET_KEY(boolean, "column_marker_enable", column_marker_enable);
-
-  g_key_file_set_integer_list(kf, PLUGIN_GROUP, "column_marker_columns",
-                              column_marker_columns, column_marker_count);
-
-  g_key_file_set_integer_list(kf, PLUGIN_GROUP, "column_marker_colors",
-                              column_marker_colors, column_marker_count);
-
   // Store back on disk
   std::string contents =
-      cstr_assign_free(g_key_file_to_data(kf, nullptr, nullptr));
+      cstr_assign(g_key_file_to_data(kf, nullptr, nullptr));
   if (!contents.empty()) {
     file_set_contents(fn, contents);
   }
@@ -128,68 +111,7 @@ void TweakSettings::load(GKeyFile *kf) {
 
   GET_KEY_BOOLEAN(sidebar_focus_enabled, false);
 
-  GET_KEY_BOOLEAN(sidebar_save_size_enabled, true);
-  GET_KEY_BOOLEAN(sidebar_save_size_update, true);
-  GET_KEY_INTEGER(sidebar_save_size_normal, 0, 0);
-  GET_KEY_INTEGER(sidebar_save_size_maximized, 0, 0);
-
-  GET_KEY_BOOLEAN(sidebar_auto_size_enabled, false);
-  GET_KEY_INTEGER(sidebar_auto_size_normal, 76, 0);
-  GET_KEY_INTEGER(sidebar_auto_size_maximized, 100, 0);
-
   GET_KEY_BOOLEAN(menubar_hide_on_start, false);
   GET_KEY_BOOLEAN(menubar_restore_state, false);
   GET_KEY_BOOLEAN(menubar_previous_state, true);
-
-  GET_KEY_BOOLEAN(column_marker_enable, true);
-
-  if (column_marker_columns != nullptr || column_marker_colors != nullptr) {
-    column_marker_count = 0;
-    GFREE(column_marker_columns);
-    GFREE(column_marker_colors);
-  }
-
-  gsize len_a = 0;
-  gsize len_b = 0;
-
-  int *tmp_columns = g_key_file_get_integer_list(
-      kf, PLUGIN_GROUP, "column_marker_columns", &len_a, nullptr);
-
-  int *tmp_colors = g_key_file_get_integer_list(
-      kf, PLUGIN_GROUP, "column_marker_colors", &len_b, nullptr);
-
-  int tmp_count = len_a < len_b ? len_a : len_b;
-
-  if (tmp_count > 0 || tmp_columns != nullptr || tmp_colors != nullptr) {
-    GFREE(column_marker_columns);
-    GFREE(column_marker_colors);
-
-    column_marker_count = tmp_count;
-    column_marker_columns = tmp_columns;
-    column_marker_colors = tmp_colors;
-  } else {
-    GFREE(tmp_columns);
-    GFREE(tmp_colors);
-  }
-}
-
-TweakSettings::TweakSettings() {
-  column_marker_count = 13;
-  column_marker_columns = (int *)g_malloc(13 * sizeof(int));
-  column_marker_colors = (int *)g_malloc(13 * sizeof(int));
-
-  // Colors are in BGR order
-  ADD_COLUMN_MARKER(0, 60, 0xe5e5e5);
-  ADD_COLUMN_MARKER(1, 72, 0xffd0b0);  // blue
-  ADD_COLUMN_MARKER(2, 80, 0xffc0ff);  // purple
-  ADD_COLUMN_MARKER(3, 88, 0xe5e5e5);
-  ADD_COLUMN_MARKER(4, 96, 0xa0b0ff);  // red
-  ADD_COLUMN_MARKER(5, 104, 0xe5e5e5);
-  ADD_COLUMN_MARKER(6, 112, 0xe5e5e5);
-  ADD_COLUMN_MARKER(7, 120, 0xe5e5e5);
-  ADD_COLUMN_MARKER(8, 128, 0xe5e5e5);
-  ADD_COLUMN_MARKER(9, 136, 0xe5e5e5);
-  ADD_COLUMN_MARKER(10, 144, 0xe5e5e5);
-  ADD_COLUMN_MARKER(11, 152, 0xe5e5e5);
-  ADD_COLUMN_MARKER(12, 160, 0xe5e5e5);
 }

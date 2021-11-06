@@ -58,10 +58,6 @@ static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data);
 static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
                                    gpointer pdata);
 
-// Pane Position Callbacks
-static void pane_position_update(gboolean enable);
-static gboolean on_draw_pane(GtkWidget *self, cairo_t *cr, gpointer user_data);
-
 // Sidebar Tab Focus Callbacks
 static void sidebar_focus_update(gboolean enable);
 
@@ -118,9 +114,6 @@ static void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data);
 static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
                              SCNotification *notif, gpointer user_data);
-
-// Other functions
-static gboolean show_column_markers(gpointer user_data = nullptr);
 
 #define GEANY_PSC(sig, cb)                                                  \
   plugin_signal_connect(geany_plugin, nullptr, (sig), TRUE, G_CALLBACK(cb), \
