@@ -44,10 +44,6 @@ extern class TweakSettings settings;
 
 enum TweakShortcuts {
   TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN,
-  TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR,
-  TWEAKS_KEY_COPY,
-  TWEAKS_KEY_PASTE_1,
-  TWEAKS_KEY_PASTE_2,
 
   TWEAKS_KEY_COUNT,
 };
@@ -100,8 +96,6 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog);
 
 // Keybinding Functions and Callbacks
 static void on_switch_focus_editor_sidebar_msgwin();
-static bool hide_menubar();
-static void on_toggle_visibility_menubar();
 static bool on_key_binding(int key_id);
 static GtkWidget *find_focus_widget(GtkWidget *widget);
 

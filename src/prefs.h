@@ -35,10 +35,6 @@ class TweakSettings {
 
  public:
   gboolean sidebar_focus_enabled = false;
-
-  gboolean menubar_hide_on_start = false;
-  gboolean menubar_restore_state = false;
-  gboolean menubar_previous_state = true;
 };
 
 // Macros to make loading settings easier

@@ -87,13 +87,6 @@ void TweakSettings::save() {
   // Update settings with new contents
   SET_KEY(boolean, "sidebar_focus_enabled", sidebar_focus_enabled);
 
-  SET_KEY(boolean, "menubar_hide_on_start", menubar_hide_on_start);
-  SET_KEY(boolean, "menubar_restore_state", menubar_restore_state);
-
-  GtkWidget * geany_menubar = ui_lookup_widget(GTK_WIDGET(geany->main_widgets->window), "hbox_menubar");
-  settings.menubar_previous_state = gtk_widget_is_visible(geany_menubar);
-  SET_KEY(boolean, "menubar_previous_state", menubar_previous_state);
-
   // Store back on disk
   std::string contents =
       cstr_assign(g_key_file_to_data(kf, nullptr, nullptr));
@@ -110,8 +103,4 @@ void TweakSettings::load(GKeyFile *kf) {
   }
 
   GET_KEY_BOOLEAN(sidebar_focus_enabled, false);
-
-  GET_KEY_BOOLEAN(menubar_hide_on_start, false);
-  GET_KEY_BOOLEAN(menubar_restore_state, false);
-  GET_KEY_BOOLEAN(menubar_previous_state, true);
 }

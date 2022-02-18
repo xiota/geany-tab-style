@@ -39,7 +39,6 @@ static GtkNotebook *geany_sidebar = nullptr;
 static GtkNotebook *geany_msgwin = nullptr;
 static GtkNotebook *geany_editor = nullptr;
 static GtkWidget *geany_hpane = nullptr;
-static GtkWidget *geany_menubar = nullptr;
 
 GtkWidget *g_tweaks_menu = nullptr;
 static GeanyDocument *g_current_doc = nullptr;
@@ -108,7 +107,6 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_msgwin = GTK_NOTEBOOK(geany->main_widgets->message_window_notebook);
   geany_editor = GTK_NOTEBOOK(geany->main_widgets->notebook);
   geany_hpane = ui_lookup_widget(GTK_WIDGET(geany_window), "hpaned1");
-  geany_menubar = ui_lookup_widget(GTK_WIDGET(geany_window), "hbox_menubar");
 
   settings.open();
 
@@ -155,23 +153,6 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
       gKeyGroup, TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN, nullptr, 0,
       GdkModifierType(0), "xitweaks_switch_focus_editor_sidebar_msgwin",
       _("Switch focus among editor, sidebar, and message window."), nullptr);
-
-  keybindings_set_item(gKeyGroup, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR, nullptr,
-                       0, GdkModifierType(0),
-                       "xitweaks_toggle_visibility_menubar_",
-                       _("Toggle visibility of the menubar."), nullptr);
-
-  keybindings_set_item(gKeyGroup, TWEAKS_KEY_COPY, nullptr, 0,
-                       GdkModifierType(0), "xitweaks_copy", _("Edit/Copy"),
-                       nullptr);
-
-  keybindings_set_item(gKeyGroup, TWEAKS_KEY_PASTE_1, nullptr, 0,
-                       GdkModifierType(0), "xitweaks_paste_1",
-                       _("Edit/Paste (1)"), nullptr);
-
-  keybindings_set_item(gKeyGroup, TWEAKS_KEY_PASTE_2, nullptr, 0,
-                       GdkModifierType(0), "xitweaks_paste_2",
-                       _("Edit/Paste (2)"), nullptr);
 
   if (g_handle_reload_config == 0) {
     g_handle_reload_config = 1;
@@ -247,15 +228,6 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
 
 static gboolean reload_config(gpointer user_data) {
   settings.open();
-
-  if (settings.menubar_hide_on_start) {
-    hide_menubar();
-  } else if (settings.menubar_restore_state &&
-             !settings.menubar_previous_state) {
-    hide_menubar();
-  } else {
-    gtk_widget_show(geany_menubar);
-  }
 
   g_handle_reload_config = 0;
   return FALSE;
@@ -540,48 +512,11 @@ static void on_switch_focus_editor_sidebar_msgwin() {
   }
 }
 
-static bool hide_menubar() {
-  if (gtk_widget_is_visible(geany_menubar)) {
-    GeanyKeyBinding *kb =
-        keybindings_get_item(gKeyGroup, TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR);
-    if (kb->key != 0) {
-      gtk_widget_hide(geany_menubar);
-      gchar *val = gtk_accelerator_name(kb->key, kb->mods);
-      msgwin_status_add(_("Menubar has been hidden.  To reshow it, use: %s"),
-                        val);
-      g_free(val);
-      return true;
-    } else {
-      msgwin_status_add(
-          _("Menubar will not be hidden until after a keybinding to reshow "
-            " it has been set."));
-      return false;
-    }
-  }
-  return false;
-}
-static void on_toggle_visibility_menubar() {
-  if (!hide_menubar()) {
-    gtk_widget_show(geany_menubar);
-  }
-}
 
 static bool on_key_binding(int key_id) {
   switch (key_id) {
     case TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN:
       on_switch_focus_editor_sidebar_msgwin();
-      break;
-    case TWEAKS_KEY_TOGGLE_VISIBILITY_MENUBAR:
-      on_toggle_visibility_menubar();
-      break;
-    case TWEAKS_KEY_COPY:
-      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD,
-                               GEANY_KEYS_CLIPBOARD_COPY);
-      break;
-    case TWEAKS_KEY_PASTE_1:
-    case TWEAKS_KEY_PASTE_2:
-      keybindings_send_command(GEANY_KEY_GROUP_CLIPBOARD,
-                               GEANY_KEYS_CLIPBOARD_PASTE);
       break;
     default:
       return false;
