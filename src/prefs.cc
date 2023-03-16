@@ -18,8 +18,9 @@
  * MA 02110-1301, USA.
  */
 
-#include "auxiliary.h"
 #include "prefs.h"
+
+#include "auxiliary.h"
 
 // Global Variables
 TweakSettings settings;
@@ -29,7 +30,7 @@ TweakSettings settings;
 void TweakSettings::open() {
   std::string conf_fn =
       cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
-                                        "xitweaks", "xitweaks.conf", nullptr));
+                                   "xitweaks", "xitweaks.conf", nullptr));
   std::string conf_dn = g_path_get_dirname(conf_fn.c_str());
   g_mkdir_with_parents(conf_dn.c_str(), 0755);
 
@@ -53,7 +54,7 @@ void TweakSettings::open() {
 void TweakSettings::save_default() {
   std::string conf_fn =
       cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
-                                        "xitweaks", "xitweaks.conf", nullptr));
+                                   "xitweaks", "xitweaks.conf", nullptr));
   std::string conf_dn = cstr_assign(g_path_get_dirname(conf_fn.c_str()));
   g_mkdir_with_parents(conf_dn.c_str(), 0755);
 
@@ -76,7 +77,7 @@ void TweakSettings::save() {
   GKeyFile *kf = g_key_file_new();
   std::string fn =
       cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
-                                        "xitweaks", "xitweaks.conf", nullptr));
+                                   "xitweaks", "xitweaks.conf", nullptr));
 
   // Load old contents in case user changed file outside of GUI
   g_key_file_load_from_file(
@@ -88,8 +89,7 @@ void TweakSettings::save() {
   SET_KEY(boolean, "sidebar_focus_enabled", sidebar_focus_enabled);
 
   // Store back on disk
-  std::string contents =
-      cstr_assign(g_key_file_to_data(kf, nullptr, nullptr));
+  std::string contents = cstr_assign(g_key_file_to_data(kf, nullptr, nullptr));
   if (!contents.empty()) {
     file_set_contents(fn, contents);
   }

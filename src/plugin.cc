@@ -512,7 +512,6 @@ static void on_switch_focus_editor_sidebar_msgwin() {
   }
 }
 
-
 static bool on_key_binding(int key_id) {
   switch (key_id) {
     case TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN:

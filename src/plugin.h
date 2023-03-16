@@ -24,17 +24,20 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 
-//#include <Scintilla.h>
-//#include <ScintillaWidget.h>
+// #include <Scintilla.h>
+// #include <ScintillaWidget.h>
 
 #include <ctype.h>
 #include <errno.h>
-#include <geanyplugin.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <locale>
+
+#include "geanyplugin.h"
 
 extern GeanyKeyGroup *keybindings_get_core_group(guint id);
 
