@@ -87,6 +87,7 @@ void TweakSettings::save() {
 
   // Update settings with new contents
   SET_KEY(boolean, "sidebar_focus_enabled", sidebar_focus_enabled);
+  SET_KEY(boolean, "notebook_focus_enabled", notebook_focus_enabled);
 
   // Store back on disk
   std::string contents = cstr_assign(g_key_file_to_data(kf, nullptr, nullptr));
@@ -103,4 +104,5 @@ void TweakSettings::load(GKeyFile *kf) {
   }
 
   GET_KEY_BOOLEAN(sidebar_focus_enabled, false);
+  GET_KEY_BOOLEAN(notebook_focus_enabled, false);
 }

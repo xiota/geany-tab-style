@@ -35,6 +35,7 @@ class TweakSettings {
 
  public:
   gboolean sidebar_focus_enabled = false;
+  gboolean notebook_focus_enabled = false;
 };
 
 // Macros to make loading settings easier

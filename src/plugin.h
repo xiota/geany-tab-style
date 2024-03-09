@@ -58,34 +58,10 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
                                    gpointer pdata);
 
 // Sidebar Tab Focus Callbacks
-static void sidebar_focus_update(gboolean enable);
+static void notebook_focus_update(gboolean enable);
 
-static void on_switch_page_sidebar(GtkNotebook *self, GtkWidget *page,
-                                   guint page_num, gpointer user_data);
-static gboolean on_select_page_sidebar(GtkNotebook *self, gboolean object,
-                                       gpointer user_data);
-static void on_set_focus_child_sidebar(GtkContainer *self, GtkWidget *object,
-                                       gpointer user_data);
-static void on_grab_focus_sidebar(GtkWidget *self, gpointer user_data);
-static void on_grab_notify_sidebar(GtkWidget *self, gpointer user_data);
-
-static void on_switch_page_msgwin(GtkNotebook *self, GtkWidget *page,
-                                  guint page_num, gpointer user_data);
-static gboolean on_select_page_msgwin(GtkNotebook *self, gboolean object,
-                                      gpointer user_data);
-static void on_set_focus_child_msgwin(GtkContainer *self, GtkWidget *object,
-                                      gpointer user_data);
-static void on_grab_focus_msgwin(GtkWidget *self, gpointer user_data);
-
-static void on_switch_page_editor(GtkNotebook *self, GtkWidget *page,
-                                  guint page_num, gpointer user_data);
-static gboolean on_select_page_editor(GtkNotebook *self, gboolean object,
-                                      gpointer user_data);
-static void on_set_focus_child_editor(GtkContainer *self, GtkWidget *object,
-                                      gpointer user_data);
-static void on_grab_focus_editor(GtkWidget *self, gpointer user_data);
-
-static gboolean sidebar_focus_highlight(gboolean highlight);
+static gboolean notebook_focus_highlight_callback(gpointer user_data);
+static gboolean notebook_focus_highlight(gboolean highlight);
 
 // Preferences Callbacks
 static gboolean reload_config(gpointer user_data);
