@@ -18,6 +18,27 @@
  * MA 02110-1301, USA.
  */
 
+#ifndef DEBUG
+#define DEBUG_STATUS_1(arg)                                    \
+  do {                                                         \
+    std::string _nb;                                           \
+    if (arg == geany_sidebar) {                                \
+      _nb = "sidebar";                                         \
+    } else if (arg == geany_msgwin) {                          \
+      _nb = "msgwin";                                          \
+    } else if (arg == geany_editor) {                          \
+      _nb = "editor";                                          \
+    } else {                                                   \
+      _nb = "unknown";                                         \
+    }                                                          \
+    msgwin_status_add(_("%s: %s"), _nb.c_str(), __FUNCTION__); \
+  } while (0)
+#define DEBUG_STATUS_0() msgwin_status_add(_("%s"), __FUNCTION__)
+#else
+#define DEBUG_STATUS_1()
+#define DEBUG_STATUS_0()
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -282,118 +303,147 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
 
 static void state_flags_changed(GtkNotebook *self, GtkStateFlags flags,
                                 gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void change_current_page(GtkNotebook *self, GtkStateFlags flags,
                                 gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void focus(GtkNotebook *self, GtkStateFlags flags, gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void focus_tab(GtkNotebook *self, GtkStateFlags flags,
                       gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void move_focus_out(GtkNotebook *self, GtkStateFlags flags,
                            gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void page_added(GtkNotebook *self, GtkStateFlags flags,
                        gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void page_removed(GtkNotebook *self, GtkStateFlags flags,
                          gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void page_reordered(GtkNotebook *self, GtkStateFlags flags,
                            gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void reorder_tab(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void select_page(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void switch_page(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void set_focus_child(GtkNotebook *self, GtkStateFlags flags,
                             gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 static void grab_focus(GtkNotebook *self, GtkStateFlags flags,
                        gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 static void grab_notify(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
+  DEBUG_STATUS_1(self);
+
   if (g_handle_notebook_focus_highlight == 0) {
     g_handle_notebook_focus_highlight = 1;
-    g_idle_add(notebook_focus_highlight_callback, nullptr);
+    g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
 
 static void notebook_focus_update(gboolean enable) {
-  // msgwin_status_add(_("%s"), __FUNCTION__);
+  DEBUG_STATUS_0();
+
   if (enable && !g_handle_focus_editor) {
     g_handle_focus_sidebar =
-        g_signal_connect(geany_msgwin, "focus", G_CALLBACK(focus), nullptr);
+        g_signal_connect(geany_sidebar, "focus", G_CALLBACK(focus), nullptr);
     g_handle_focus_msgwin =
         g_signal_connect(geany_msgwin, "focus", G_CALLBACK(focus), nullptr);
     g_handle_focus_editor =
