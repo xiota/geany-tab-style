@@ -1,0 +1,3 @@
+#pragma once
+
+#define TWEAKS_CONFIG "@plugin_conf@"

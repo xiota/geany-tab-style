@@ -1,22 +1,4 @@
-/*
- * Tweaks Plugin for Geany
- * Copyright 2021 xiota
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef DEBUG
 #define DEBUG_STATUS_1(arg)                                    \
@@ -37,10 +19,6 @@
 #else
 #define DEBUG_STATUS_1()
 #define DEBUG_STATUS_0()
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
 #endif
 
 #include <time.h>
@@ -82,7 +60,6 @@ static gulong g_handle_switch_page_sidebar = 0;
 
 static gulong g_handle_notebook_focus_highlight = 0;
 
-static gulong g_handle_pane_position = 0;
 static gulong g_handle_reload_config = 0;
 
 static GeanyKeyGroup *gKeyGroup = nullptr;
@@ -117,7 +94,7 @@ GtkWidget *plugin_configure(GtkDialog *dlg) {
 
 // void plugin_help(void) { }
 
-static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
+gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   geany_plugin = plugin;
   geany_data = plugin->geany_data;
 
@@ -182,7 +159,7 @@ static gboolean tweaks_init(GeanyPlugin *plugin, gpointer data) {
   return true;
 }
 
-static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
+void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
   gtk_widget_destroy(g_tweaks_menu);
 
   notebook_focus_update(false);
@@ -190,7 +167,7 @@ static void tweaks_cleanup(GeanyPlugin *plugin, gpointer data) {
   settings.save();
 }
 
-static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
+GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
                                    gpointer pdata) {
   GtkWidget *box, *btn;
   char *tooltip;
@@ -246,7 +223,7 @@ static GtkWidget *tweaks_configure(GeanyPlugin *plugin, GtkDialog *dialog,
  * Preferences Callbacks
  */
 
-static gboolean reload_config(gpointer user_data) {
+gboolean reload_config(gpointer user_data) {
   settings.open();
 
   notebook_focus_update(settings.sidebar_focus_enabled ||
@@ -256,22 +233,22 @@ static gboolean reload_config(gpointer user_data) {
   return false;
 }
 
-static void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
+void on_pref_reload_config(GtkWidget *self, GtkWidget *dialog) {
   if (g_handle_reload_config == 0) {
     g_handle_reload_config = 1;
     g_idle_add(reload_config, nullptr);
   }
 }
 
-static void on_pref_save_config(GtkWidget *self, GtkWidget *dialog) {
+void on_pref_save_config(GtkWidget *self, GtkWidget *dialog) {
   settings.save();
 }
 
-static void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
+void on_pref_reset_config(GtkWidget *self, GtkWidget *dialog) {
   settings.save_default();
 }
 
-static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
+void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
   std::string conf_dn = cstr_assign(
       g_build_filename(geany_data->app->configdir, "plugins", nullptr));
 
@@ -279,7 +256,7 @@ static void on_pref_open_config_folder(GtkWidget *self, GtkWidget *dialog) {
   (void)!system(command.c_str());
 }
 
-static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
+void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   settings.open();
   std::string conf_fn =
       cstr_assign(g_build_filename(geany_data->app->configdir, "plugins",
@@ -293,7 +270,7 @@ static void on_pref_edit_config(GtkWidget *self, GtkWidget *dialog) {
   }
 }
 
-static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
+void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
   plugin_show_configure(geany_plugin);
 }
 
@@ -301,7 +278,7 @@ static void on_menu_preferences(GtkWidget *self, GtkWidget *dialog) {
  * Sidebar Tab Focus Callbacks
  */
 
-static void state_flags_changed(GtkNotebook *self, GtkStateFlags flags,
+void state_flags_changed(GtkNotebook *self, GtkStateFlags flags,
                                 gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -311,7 +288,7 @@ static void state_flags_changed(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void change_current_page(GtkNotebook *self, GtkStateFlags flags,
+void change_current_page(GtkNotebook *self, GtkStateFlags flags,
                                 gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -321,7 +298,7 @@ static void change_current_page(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void focus(GtkNotebook *self, GtkStateFlags flags, gpointer user_data) {
+void focus(GtkNotebook *self, GtkStateFlags flags, gpointer user_data) {
   DEBUG_STATUS_1(self);
 
   if (g_handle_notebook_focus_highlight == 0) {
@@ -330,7 +307,7 @@ static void focus(GtkNotebook *self, GtkStateFlags flags, gpointer user_data) {
   }
 }
 
-static void focus_tab(GtkNotebook *self, GtkStateFlags flags,
+void focus_tab(GtkNotebook *self, GtkStateFlags flags,
                       gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -340,7 +317,7 @@ static void focus_tab(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void move_focus_out(GtkNotebook *self, GtkStateFlags flags,
+void move_focus_out(GtkNotebook *self, GtkStateFlags flags,
                            gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -350,7 +327,7 @@ static void move_focus_out(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void page_added(GtkNotebook *self, GtkStateFlags flags,
+void page_added(GtkNotebook *self, GtkStateFlags flags,
                        gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -360,7 +337,7 @@ static void page_added(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void page_removed(GtkNotebook *self, GtkStateFlags flags,
+void page_removed(GtkNotebook *self, GtkStateFlags flags,
                          gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -370,7 +347,7 @@ static void page_removed(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void page_reordered(GtkNotebook *self, GtkStateFlags flags,
+void page_reordered(GtkNotebook *self, GtkStateFlags flags,
                            gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -380,7 +357,7 @@ static void page_reordered(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void reorder_tab(GtkNotebook *self, GtkStateFlags flags,
+void reorder_tab(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -390,7 +367,7 @@ static void reorder_tab(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void select_page(GtkNotebook *self, GtkStateFlags flags,
+void select_page(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -400,7 +377,7 @@ static void select_page(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void switch_page(GtkNotebook *self, GtkStateFlags flags,
+void switch_page(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -410,7 +387,7 @@ static void switch_page(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void set_focus_child(GtkNotebook *self, GtkStateFlags flags,
+void set_focus_child(GtkNotebook *self, GtkStateFlags flags,
                             gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -419,7 +396,7 @@ static void set_focus_child(GtkNotebook *self, GtkStateFlags flags,
     g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
-static void grab_focus(GtkNotebook *self, GtkStateFlags flags,
+void grab_focus(GtkNotebook *self, GtkStateFlags flags,
                        gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -428,7 +405,7 @@ static void grab_focus(GtkNotebook *self, GtkStateFlags flags,
     g_idle_add(notebook_focus_highlight_callback, self);
   }
 }
-static void grab_notify(GtkNotebook *self, GtkStateFlags flags,
+void grab_notify(GtkNotebook *self, GtkStateFlags flags,
                         gpointer user_data) {
   DEBUG_STATUS_1(self);
 
@@ -438,7 +415,7 @@ static void grab_notify(GtkNotebook *self, GtkStateFlags flags,
   }
 }
 
-static void notebook_focus_update(gboolean enable) {
+void notebook_focus_update(gboolean enable) {
   DEBUG_STATUS_0();
 
   if (enable && !g_handle_focus_editor) {
@@ -513,13 +490,13 @@ static void notebook_focus_update(gboolean enable) {
   }
 }
 
-static gboolean notebook_focus_highlight_callback(gpointer user_data) {
+gboolean notebook_focus_highlight_callback(gpointer user_data) {
   notebook_focus_highlight(true);
   g_handle_notebook_focus_highlight = 0;
   return false;
 }
 
-static gboolean notebook_focus_highlight(gboolean highlight) {
+gboolean notebook_focus_highlight(gboolean highlight) {
   static GtkNotebook *notebooks[3] = {geany_sidebar, geany_editor,
                                       geany_msgwin};
 
@@ -559,7 +536,7 @@ static gboolean notebook_focus_highlight(gboolean highlight) {
  * Keybinding Functions and Callbacks
  */
 
-static void on_switch_focus_editor_sidebar_msgwin() {
+void on_switch_focus_editor_sidebar_msgwin() {
   GeanyDocument *doc = document_get_current();
   if (doc != nullptr) {
     gint cur_page = gtk_notebook_get_current_page(geany_sidebar);
@@ -582,7 +559,7 @@ static void on_switch_focus_editor_sidebar_msgwin() {
   }
 }
 
-static bool on_key_binding(int key_id) {
+bool on_key_binding(int key_id) {
   switch (key_id) {
     case TWEAKS_KEY_SWITCH_FOCUS_EDITOR_SIDEBAR_MSGWIN:
       on_switch_focus_editor_sidebar_msgwin();
@@ -593,7 +570,7 @@ static bool on_key_binding(int key_id) {
   return true;
 }
 
-static GtkWidget *find_focus_widget(GtkWidget *widget) {
+GtkWidget *find_focus_widget(GtkWidget *widget) {
   GtkWidget *focus = nullptr;
 
   // optimized simple case
@@ -621,10 +598,10 @@ static GtkWidget *find_focus_widget(GtkWidget *widget) {
  * Geany Signal Callbacks
  */
 
-static void on_document_signal(GObject *obj, GeanyDocument *doc,
+void on_document_signal(GObject *obj, GeanyDocument *doc,
                                gpointer user_data) {}
 
-static void on_startup_signal(GObject *obj, GeanyDocument *doc,
+void on_startup_signal(GObject *obj, GeanyDocument *doc,
                               gpointer user_data) {
   if (g_handle_reload_config == 0) {
     g_handle_reload_config = 1;
@@ -632,10 +609,10 @@ static void on_startup_signal(GObject *obj, GeanyDocument *doc,
   }
 }
 
-static void on_project_signal(GObject *obj, GKeyFile *config,
+void on_project_signal(GObject *obj, GKeyFile *config,
                               gpointer user_data) {}
 
-static bool on_editor_notify(GObject *obj, GeanyEditor *editor,
+bool on_editor_notify(GObject *obj, GeanyEditor *editor,
                              SCNotification *notif, gpointer user_data) {
   switch (notif->nmhdr.code) {
     case SCN_FOCUSIN:
